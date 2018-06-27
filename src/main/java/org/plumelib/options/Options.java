@@ -38,6 +38,7 @@ import org.checkerframework.checker.lock.qual.*;
 import org.checkerframework.checker.nullness.qual.*;
 import org.checkerframework.dataflow.qual.*;
 */
+import org.checkerframework.checker.determinism.qual.*;
 
 /**
  * The Options class:
@@ -327,7 +328,7 @@ public class Options {
    *
    * @param enabled whether to enable or disable logging
    */
-  public void enableDebugLogging(boolean enabled) {
+  public void enableDebugLogging(@Det boolean enabled) {
     debugEnabled = enabled;
   }
 
@@ -335,7 +336,7 @@ public class Options {
   private String optionsString = "";
 
   /** The system-dependent line separator. */
-  private static String lineSeparator = System.getProperty("line.separator");
+  private static @NonDet String lineSeparator = System.getProperty("line.separator");
 
   /** Information about an option. */
   class OptionInfo {
@@ -421,10 +422,10 @@ public class Options {
      * @param unpublicized whether the option is unpublicized
      */
     OptionInfo(
-        Field field,
-        Option option,
-        /*@UnknownInitialization*/ /*@Raw*/ /*@Nullable*/ Object obj,
-        boolean unpublicized) {
+        @Det Field field,
+        @Det Option option,
+        @Det /*@UnknownInitialization*/ /*@Raw*/ /*@Nullable*/ Object obj,
+        @Det boolean unpublicized) {
       this.field = field;
       //      this.option = option;
       this.obj = obj;
@@ -602,13 +603,13 @@ public class Options {
     /** List of options that belong to this group. */
     List<OptionInfo> optionList;
 
-    OptionGroupInfo(String name, boolean unpublicized) {
+    OptionGroupInfo(@Det String name, @Det boolean unpublicized) {
       optionList = new ArrayList<OptionInfo>();
       this.name = name;
       this.unpublicized = unpublicized;
     }
 
-    OptionGroupInfo(OptionGroup optionGroup) {
+    OptionGroupInfo(@Det OptionGroup optionGroup) {
       optionList = new ArrayList<OptionInfo>();
       this.name = optionGroup.value();
       this.unpublicized = optionGroup.unpublicized();
@@ -636,7 +637,7 @@ public class Options {
    *
    * @param args the classes whose options to process
    */
-  public Options(/*@UnknownInitialization*/ /*@Raw*/ Object... args) {
+  public Options(@Det /*@UnknownInitialization*/ /*@Raw*/ Object... args) {
     this("", args);
   }
 
@@ -649,7 +650,7 @@ public class Options {
    * @param usageSynopsis a synopsis of how to call your program
    * @param args the classes whose options to process
    */
-  public Options(String usageSynopsis, /*@UnknownInitialization*/ /*@Raw*/ Object... args) {
+  public Options(@Det String usageSynopsis, @Det /*@UnknownInitialization*/ /*@Raw*/ Object... args) {
 
     if (args.length == 0) {
       throw new Error("Must pass at least one object to Options constructor");
@@ -852,7 +853,7 @@ public class Options {
    *
    * @param val whether to parse arguments after a non-option command-line argument
    */
-  public void setParseAfterArg(boolean val) {
+  public void setParseAfterArg(@Det boolean val) {
     parseAfterArg = val;
   }
 
@@ -866,7 +867,7 @@ public class Options {
    * @param val whether to parse long options with a single dash, as in <span style="white-space:
    *     nowrap;">{@code -longOption}</span>
    */
-  public void setUseSingleDash(boolean val) {
+  public void setUseSingleDash(@Det boolean val) {
     useSingleDash = val;
   }
 
