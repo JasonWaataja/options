@@ -1567,7 +1567,7 @@ public class Options {
     /*@Nullable*/ String typeName;
     String description;
 
-    ParseResult(/*@Nullable*/ String shortName, /*@Nullable*/ String typeName, String description) {
+    ParseResult(@Det /*@Nullable*/ String shortName, @Det /*@Nullable*/ String typeName, @Det String description) {
       this.shortName = shortName;
       this.typeName = typeName;
       this.description = description;
@@ -1578,7 +1578,7 @@ public class Options {
    * Parse an option value and return its three components (shortName, typeName, and description).
    * The shortName and typeName are null if they are not specified in the string.
    */
-  private static ParseResult parseOption(String val) {
+  private static ParseResult parseOption(@Det String val) {
 
     // Get the short name, long name, and description
     String shortName;
