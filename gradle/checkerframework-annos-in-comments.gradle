@@ -64,7 +64,7 @@ compileJava {
   doFirst {
     options.compilerArgs = [
         '-processorpath', "${configurations.checkerFrameworkCheckerJar.asPath}",
-        '-processor', 'org.checkerframework.checker.formatter.FormatterChecker,org.checkerframework.checker.index.IndexChecker,org.checkerframework.checker.lock.LockChecker,org.checkerframework.checker.nullness.NullnessChecker,org.checkerframework.checker.signature.SignatureChecker',
+        '-processor', 'org.checkerframework.checker.formatter.FormatterChecker,org.checkerframework.checker.index.IndexChecker,org.checkerframework.checker.lock.LockChecker,org.checkerframework.checker.nullness.NullnessChecker,org.checkerframework.checker.signature.SignatureChecker,org.checkerframework.checker.determinism.DeterminismChecker',
         '-Xmaxerrs', '10000',
         '-Xmaxwarns', '10000',
         '-Awarns',      // turn Checker Framework errors into warnings
