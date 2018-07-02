@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Scanner;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
+import org.checkerframework.checker.determinism.qual.*;
 
 /*>>>
 import org.checkerframework.checker.formatter.qual.*;
@@ -172,6 +173,8 @@ import org.checkerframework.common.value.qual.*;
 @SuppressWarnings("deprecation") // JDK 9 deprecates com.sun.javadoc package
 public class OptionsDoclet {
 
+  @SuppressWarnings("determinism") // The line separator is technichally non deterministic but we want our methods
+                                   // to treat it as such.
   private static String eol = System.getProperty("line.separator");
 
   private static final /*@Format({})*/ String USAGE =
@@ -204,7 +207,7 @@ public class OptionsDoclet {
   private RootDoc root;
   private Options options;
 
-  public OptionsDoclet(RootDoc root, Options options) {
+  public OptionsDoclet(@Det RootDoc root, @Det Options options) {
     this.root = root;
     this.options = options;
   }
@@ -217,7 +220,7 @@ public class OptionsDoclet {
    * @param root the root document
    * @return true if processing completed without an error
    */
-  public static boolean start(RootDoc root) {
+  public static boolean start(@Det RootDoc root) {
     List<Object> objs = new ArrayList<Object>();
     for (ClassDoc doc : root.specifiedClasses()) {
       // TODO: Class.forName() expects a binary name but doc.qualifiedName()
@@ -244,7 +247,9 @@ public class OptionsDoclet {
         try {
           Constructor<?> c = clazz.getDeclaredConstructor();
           c.setAccessible(true);
-          objs.add(c.newInstance(new Object[0]));
+          @SuppressWarnings("determinism") // newInstance is typed as @NonDet Object.
+          @Det Object instance = c.newInstance(new Object[0]);
+          objs.add(instance);
         } catch (Exception e) {
           e.printStackTrace();
           return false;
@@ -700,6 +705,7 @@ public class OptionsDoclet {
     if (refillWidth <= 0) {
       return in;
     }
+    @Det String eol = this.eol;
 
     // suffix is text *not* to refill.
     String suffix = null;
@@ -855,7 +861,7 @@ public class OptionsDoclet {
    *
    * @param val true to set the output format to Javadoc, false to set the output format to HTML
    */
-  public void setFormatJavadoc(boolean val) {
+  public void setFormatJavadoc(@Det boolean val) {
     if (val && !formatJavadoc) {
       startDelim = "* " + startDelim;
       endDelim = "* " + endDelim;

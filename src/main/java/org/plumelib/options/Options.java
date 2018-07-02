@@ -336,7 +336,8 @@ public class Options {
   private String optionsString = "";
 
   /** The system-dependent line separator. */
-  private static @NonDet String lineSeparator = System.getProperty("line.separator");
+  @SuppressWarnings("determinism") // See OptionsDoclet field with the same value.
+  private static String lineSeparator = System.getProperty("line.separator");
 
   /** Information about an option. */
   class OptionInfo {
@@ -679,7 +680,8 @@ public class Options {
       if (mainClass == Void.TYPE) {
         mainClass = clazz;
       }
-      Field[] fields = clazz.getDeclaredFields();
+      @SuppressWarnings("determinsim") // the fields of the class are deterministic enough.
+      @PolyDet Field @PolyDet [] fields = clazz.getDeclaredFields();
 
       for (Field f : fields) {
         try {

@@ -1,5 +1,7 @@
 package org.plumelib.options;
 
+import org.checkerframework.checker.determinism.qual.*;
+
 /// COPIED FROM PLUME-LIB
 /// to avoid adding a dependency or a new tiny project.
 /// This class is replaced by StringJoiner.java in Java 8.x
@@ -40,7 +42,7 @@ class StringBuilderDelimited implements Appendable, CharSequence {
    *
    * @param delimiter the delimiter to be put between strings that are appended to this
    */
-  public StringBuilderDelimited(String delimiter) {
+  public StringBuilderDelimited(@Det String delimiter) {
     this.delimiter = delimiter;
   }
 
