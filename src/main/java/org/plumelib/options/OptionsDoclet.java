@@ -771,7 +771,12 @@ public class OptionsDoclet {
       b.append(" <code>[+]</code>");
     }
     f.format(".%n ");
-    f.format("%s", StringUtils.repeat(" ", padding));
+    // TODO: See if this has been fixed in the determinism checker.
+    // f.format here requires a @Det argument, even though we want it to only have to be @PolyDet.
+    // This is probably a bug with the checker.
+    @SuppressWarnings("determinism")
+    @Det String repeated = StringUtils.repeat(" ", padding);
+    f.format("%s", repeated);
 
     String jdoc = ((oi.jdoc == null) ? "" : oi.jdoc);
     if (oi.noDocDefault || oi.defaultStr == null) {

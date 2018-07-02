@@ -333,7 +333,7 @@ public class Options {
   }
 
   /** All of the argument options as a single string. Used for debugging. */
-  private String optionsString = "";
+  private @NonDet String optionsString = "";
 
   /** The system-dependent line separator. */
   @SuppressWarnings("determinism") // See OptionsDoclet field with the same value.
@@ -680,8 +680,10 @@ public class Options {
       if (mainClass == Void.TYPE) {
         mainClass = clazz;
       }
-      @SuppressWarnings("determinsim") // the fields of the class are deterministic enough.
-      @PolyDet Field @PolyDet [] fields = clazz.getDeclaredFields();
+      // TODO: Come back and decide whether or not this just be suppressed.
+      @SuppressWarnings("determinsim") // The ordering means this will always be non-deterministic,
+                                       // but we don't care.
+      @Det Field @Det [] fields = clazz.getDeclaredFields();
 
       for (Field f : fields) {
         try {
@@ -995,8 +997,13 @@ public class Options {
         }
         arg += ch;
       } else if (Character.isWhitespace(ch)) {
+        // TODO: See if the determinism checker has been fixed.
+        // argList seems to require @Det arguments, when we really want @PolyDet. This may be a bug
+        // in the determinism checker.
+        @SuppressWarnings("determinism")
+        @Det String argDet = arg;
         // System.out.printf ("adding argument '%s'%n", arg);
-        argList.add(arg);
+        argList.add(argDet);
         arg = "";
         while ((ii < args.length()) && Character.isWhitespace(args.charAt(ii))) {
           ii++;
@@ -1011,7 +1018,11 @@ public class Options {
       }
     }
     if (!arg.equals("")) {
-      argList.add(arg);
+      // argList seems to require @Det arguments, when we really want @PolyDet. This may be a bug
+      // in the determinism checker.
+      @SuppressWarnings("determinism")
+      @Det String argDet = arg;
+      argList.add(argDet);
     }
 
     String[] argsArray = argList.toArray(new String[argList.size()]);
@@ -1098,7 +1109,11 @@ public class Options {
     if (usageSynopsis != null) {
       ps.printf("Usage: %s%n", usageSynopsis);
     }
-    ps.println(usage());
+    // TODO: Find out if this is actually the intended behavior.
+    // Printing out something potentially @NonDet here is the intended behavior.
+    @SuppressWarnings("determinism")
+    @Det String usage = usage();
+    ps.println(usage);
     if (hasListOption) {
       ps.println();
       ps.println(LIST_HELP);
@@ -1167,7 +1182,10 @@ public class Options {
 
     List<Integer> lengths = new ArrayList<Integer>();
     for (OptionGroupInfo gi : groups) {
-      lengths.add(maxOptionLength(gi.optionList, showUnpublicized));
+      // Once again, the add method seems to require @Det argument here when we want @PolyDet
+      @SuppressWarnings("determinism")
+      @Det int len = maxOptionLength(gi.optionList, showUnpublicized);
+      lengths.add(len);
     }
     int maxLength = Collections.max(lengths);
 
@@ -1213,7 +1231,7 @@ public class Options {
    *
    * @return the length of the longest synopsis message in a list of options
    */
-  private int maxOptionLength(List<OptionInfo> optList, boolean showUnpublicized) {
+  private @PolyDet("down") int maxOptionLength(List<OptionInfo> optList, boolean showUnpublicized) {
     int maxLength = 0;
     for (OptionInfo oi : optList) {
       if (oi.unpublicized && !showUnpublicized) {
@@ -1375,11 +1393,18 @@ public class Options {
           if (spaceSeparatedLists) {
             String[] aarr = argValue.split("  *");
             for (String aval : aarr) {
-              Object val = getRefArg(oi, argName, aval);
+              // TODO: Is this actually ok?
+              // This is weird because list is a @Det field of a @PolyDet parameter. This should be
+              // okay.
+              @SuppressWarnings("determinism")
+              @Det Object val = getRefArg(oi, argName, aval);
               oi.list.add(val); // uncheck cast
             }
           } else {
-            Object val = getRefArg(oi, argName, argValue);
+            // This is weird because list is a @Det field of a @PolyDet parameter. This should be
+            // okay.
+            @SuppressWarnings("determinism")
+            @Det Object val = getRefArg(oi, argName, argValue);
             oi.list.add(val);
           }
         } else {
@@ -1477,7 +1502,7 @@ public class Options {
    * @return options, similarly to supplied on the command line
    * @see #settings()
    */
-  public String getOptionsString() {
+  public @NonDet String getOptionsString() {
     return optionsString;
   }
 
