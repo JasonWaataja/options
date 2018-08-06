@@ -336,8 +336,7 @@ public class Options {
   private @NonDet String optionsString = "";
 
   /** The system-dependent line separator. */
-  @SuppressWarnings("determinism") // See OptionsDoclet field with the same value.
-  private static String lineSeparator = System.getProperty("line.separator");
+  private static @NonDet String lineSeparator = System.getProperty("line.separator");
 
   /** Information about an option. */
   class OptionInfo {
@@ -683,7 +682,7 @@ public class Options {
       // TODO: Come back and decide whether or not this just be suppressed.
       @SuppressWarnings("determinsim") // The ordering means this will always be non-deterministic,
                                        // but we don't care.
-      @Det Field @Det [] fields = clazz.getDeclaredFields();
+      @Det Field @OrderNonDet [] fields = clazz.getDeclaredFields();
 
       for (Field f : fields) {
         try {
@@ -700,8 +699,10 @@ public class Options {
         }
         try {
           if (debugEnabled) {
+            @SuppressWarnings("determinism")
+            @Det String msg = Arrays.toString(f.getDeclaredAnnotations());
             System.err.printf(
-                "  with annotations %s%n", Arrays.toString(f.getDeclaredAnnotations()));
+                "  with annotations %s%n", msg);
           }
         } catch (java.lang.ArrayStoreException e) {
           if (e.getMessage() != null
@@ -821,12 +822,14 @@ public class Options {
       /*@Nullable*/ T cast = f.getAnnotation((Class</*@NonNull*/ T>) annotationClass);
       annotation = cast;
     } catch (Exception e) {
+      @SuppressWarnings("determinism")
+      @Det String msg = String.format(
+          "Exception in call to f.getAnnotation(%s)%n  for f=%s%n  %s%nClasspath =%n",
+          annotationClass, f, e.getMessage());
       // Can get
       //   java.lang.ArrayStoreException: sun.reflect.annotation.TypeNotPresentExceptionProxy
       // when an annotation is not present at run time (example: @NonNull)
-      System.out.printf(
-          "Exception in call to f.getAnnotation(%s)%n  for f=%s%n  %s%nClasspath =%n",
-          annotationClass, f, e.getMessage());
+      System.out.printf("%s", msg);
       // e.printStackTrace();
       printClassPath();
       annotation = null;
@@ -945,7 +948,9 @@ public class Options {
         if (oi.argumentRequired() && (argValue == null)) {
           ii++;
           if (ii >= args.length) {
-            throw new ArgException("option %s requires an argument", arg);
+            @SuppressWarnings("determinism")
+            @Det ArgException e =  new ArgException("option %s requires an argument", arg);
+            throw e;
           }
           argValue = args[ii];
         }
@@ -985,7 +990,7 @@ public class Options {
     // strings.
     args = args.trim();
     List<String> argList = new ArrayList<String>();
-    String arg = "";
+    @PolyDet String arg = "";
     char activeQuote = 0;
     for (int ii = 0; ii < args.length(); ii++) {
       char ch = args.charAt(ii);
@@ -997,13 +1002,8 @@ public class Options {
         }
         arg += ch;
       } else if (Character.isWhitespace(ch)) {
-        // TODO: See if the determinism checker has been fixed.
-        // argList seems to require @Det arguments, when we really want @PolyDet. This may be a bug
-        // in the determinism checker.
-        @SuppressWarnings("determinism")
-        @Det String argDet = arg;
         // System.out.printf ("adding argument '%s'%n", arg);
-        argList.add(argDet);
+        argList.add(arg);
         arg = "";
         while ((ii < args.length()) && Character.isWhitespace(args.charAt(ii))) {
           ii++;
@@ -1020,8 +1020,7 @@ public class Options {
     if (!arg.equals("")) {
       // argList seems to require @Det arguments, when we really want @PolyDet. This may be a bug
       // in the determinism checker.
-      @SuppressWarnings("determinism")
-      @Det String argDet = arg;
+      String argDet = arg;
       argList.add(argDet);
     }
 
@@ -1043,7 +1042,7 @@ public class Options {
    * @return all non-option arguments
    * @see #parse(String[])
    */
-  public String[] parse(String message, String[] args) {
+  public String[] parse(@Det String message, String[] args) {
 
     String[] nonOptions = null;
 
@@ -1109,8 +1108,6 @@ public class Options {
     if (usageSynopsis != null) {
       ps.printf("Usage: %s%n", usageSynopsis);
     }
-    // TODO: Find out if this is actually the intended behavior.
-    // Printing out something potentially @NonDet here is the intended behavior.
     @SuppressWarnings("determinism")
     @Det String usage = usage();
     ps.println(usage);
@@ -1134,7 +1131,7 @@ public class Options {
    *     unpublicized. If empty and option groups are not being used, will return usage for all
    *     options that are not unpublicized.
    */
-  public String usage(String... groupNames) {
+  public @NonDet String usage(String... groupNames) {
     return usage(false, groupNames);
   }
 
@@ -1148,7 +1145,7 @@ public class Options {
    *     unpublicized. If empty and option groups are not being used, will return usage for all
    *     options that are not unpublicized.
    */
-  public String usage(boolean showUnpublicized, String... groupNames) {
+  public @NonDet String usage(boolean showUnpublicized, String... groupNames) {
     if (!hasGroups) {
       if (groupNames.length > 0) {
         throw new IllegalArgumentException(
@@ -1188,7 +1185,8 @@ public class Options {
     }
     int maxLength = Collections.max(lengths);
 
-    StringBuilderDelimited buf = new StringBuilderDelimited(lineSeparator);
+    @SuppressWarnings("determinism")
+    @NonDet StringBuilderDelimited buf = new StringBuilderDelimited(lineSeparator);
     for (OptionGroupInfo gi : groups) {
       buf.add(String.format("%n%s:", gi.name));
       buf.add(formatOptions(gi.optionList, maxLength, showUnpublicized));
@@ -1201,8 +1199,9 @@ public class Options {
    * Format a list of options for use in generating usage messages. Also sets {@link #hasListOption}
    * if any option has list type.
    */
-  private String formatOptions(List<OptionInfo> optList, int maxLength, boolean showUnpublicized) {
-    StringBuilderDelimited buf = new StringBuilderDelimited(lineSeparator);
+  private @NonDet String formatOptions(List<OptionInfo> optList, int maxLength, boolean showUnpublicized) {
+    @SuppressWarnings("determinism")
+    @NonDet StringBuilderDelimited buf = new StringBuilderDelimited(lineSeparator);
     for (OptionInfo oi : optList) {
       if (oi.unpublicized && !showUnpublicized) {
         continue;
@@ -1314,8 +1313,10 @@ public class Options {
           } else if (argValueLowercase.equals("false") || argValueLowercase.equals("f")) {
             val = false;
           } else {
-            throw new ArgException(
+            @SuppressWarnings("determinism")
+            @Det ArgException e = new ArgException(
                 "Value \"%s\" for argument %s is not a boolean", argValue, argName);
+            throw e;
           }
           argValue = (val) ? "true" : "false";
           // System.out.printf ("Setting %s to %s%n", argName, val);
@@ -1325,13 +1326,17 @@ public class Options {
           try {
             val = Byte.decode(argValue);
           } catch (Exception e) {
-            throw new ArgException("Value \"%s\" for argument %s is not a byte", argValue, argName);
+            @SuppressWarnings("determinism")
+            @Det ArgException exception = new ArgException("Value \"%s\" for argument %s is not a byte", argValue, argName);
+            throw exception;
           }
           f.setByte(oi.obj, val);
         } else if (type == Character.TYPE) {
           if (argValue.length() != 1) {
-            throw new ArgException(
+            @SuppressWarnings("determinism")
+            @Det ArgException e = new ArgException(
                 "Value \"%s\" for argument %s is not a single character", argValue, argName);
+            throw e;
           }
           char val = argValue.charAt(0);
           f.setChar(oi.obj, val);
@@ -1340,8 +1345,10 @@ public class Options {
           try {
             val = Short.decode(argValue);
           } catch (Exception e) {
-            throw new ArgException(
+            @SuppressWarnings("determinism")
+            @Det ArgException exception = new ArgException(
                 "Value \"%s\" for argument %s is not a short integer", argValue, argName);
+            throw exception;
           }
           f.setShort(oi.obj, val);
         } else if (type == Integer.TYPE) {
@@ -1349,8 +1356,10 @@ public class Options {
           try {
             val = Integer.decode(argValue);
           } catch (Exception e) {
-            throw new ArgException(
+            @SuppressWarnings("determinism")
+            @Det ArgException exception = new ArgException(
                 "Value \"%s\" for argument %s is not an integer", argValue, argName);
+            throw exception;
           }
           f.setInt(oi.obj, val);
         } else if (type == Long.TYPE) {
@@ -1358,8 +1367,10 @@ public class Options {
           try {
             val = Long.decode(argValue);
           } catch (Exception e) {
-            throw new ArgException(
+            @SuppressWarnings("determinism")
+            @Det ArgException exception = new ArgException(
                 "Value \"%s\" for argument %s is not a long integer", argValue, argName);
+            throw exception;
           }
           f.setLong(oi.obj, val);
         } else if (type == Float.TYPE) {
@@ -1367,8 +1378,10 @@ public class Options {
           try {
             val = Float.valueOf(argValue);
           } catch (Exception e) {
-            throw new ArgException(
+            @SuppressWarnings("determinism")
+            @Det ArgException exception = new ArgException(
                 "Value \"%s\" for argument %s is not a float", argValue, argName);
+            throw exception;
           }
           f.setFloat(oi.obj, val);
         } else if (type == Double.TYPE) {
@@ -1376,8 +1389,10 @@ public class Options {
           try {
             val = Double.valueOf(argValue);
           } catch (Exception e) {
-            throw new ArgException(
+            @SuppressWarnings("determinism")
+            @Det ArgException exception = new ArgException(
                 "Value \"%s\" for argument %s is not a double", argValue, argName);
+            throw exception;
           }
           f.setDouble(oi.obj, val);
         } else { // unexpected type
@@ -1395,15 +1410,13 @@ public class Options {
               // TODO: Is this actually ok?
               // This is weird because list is a @Det field of a @PolyDet parameter. This should be
               // okay.
-              @SuppressWarnings("determinism")
-              @Det Object val = getRefArg(oi, argName, aval);
+              Object val = getRefArg(oi, argName, aval);
               oi.list.add(val); // uncheck cast
             }
           } else {
             // This is weird because list is a @Det field of a @PolyDet parameter. This should be
             // okay.
-            @SuppressWarnings("determinism")
-            @Det Object val = getRefArg(oi, argName, argValue);
+            Object val = getRefArg(oi, argName, argValue);
             oi.list.add(val);
           }
         } else {
@@ -1422,7 +1435,9 @@ public class Options {
    * Create an instance of the correct type by passing the argument value string to the constructor.
    * The only expected error is some sort of parse error from the constructor.
    */
-  @SuppressWarnings("nullness") // static method, so null first arg is OK: oi.factory
+  @SuppressWarnings({"nullness", "determinism"}) // static method, so null first arg is OK: oi.factory
+  // Suppressing determinism because of use of a @Det field in @PolyDet return
+  // valued method.
   private /*@NonNull*/ Object getRefArg(OptionInfo oi, String argName, String argValue)
       throws ArgException {
 
@@ -1445,7 +1460,9 @@ public class Options {
         }
       }
     } catch (Exception e) {
-      throw new ArgException("Invalid argument (%s) for argument %s", argValue, argName);
+      @SuppressWarnings("determinism")
+      @Det ArgException exception = new ArgException("Invalid argument (%s) for argument %s", argValue, argName);
+      throw exception;
     }
 
     return val;
@@ -1514,7 +1531,7 @@ public class Options {
    * @return a command line that can be tokenized with {@link #tokenize}, containing the current
    *     setting for each option
    */
-  public String settings() {
+  public @NonDet String settings() {
     return settings(false);
   }
 
@@ -1528,8 +1545,9 @@ public class Options {
    * @return a command line that can be tokenized with {@link #tokenize}, containing the current
    *     setting for each option
    */
-  public String settings(boolean showUnpublicized) {
-    StringBuilderDelimited out = new StringBuilderDelimited(lineSeparator);
+  public @NonDet String settings(boolean showUnpublicized) {
+    @SuppressWarnings("determinism")
+    @NonDet StringBuilderDelimited out = new StringBuilderDelimited(lineSeparator);
 
     // Determine the length of the longest name
     int maxLength = maxOptionLength(options, showUnpublicized);
@@ -1562,7 +1580,10 @@ public class Options {
   }) // side effect to local state (string creation)
   /*@SideEffectFree*/
   public String toString(/*>>>@GuardSatisfied Options this*/) {
-    StringBuilderDelimited out = new StringBuilderDelimited(lineSeparator);
+    @SuppressWarnings("determinism")
+    // Below should be a @NonDet builder, but to satisfy the contract of
+    // toString, the result must be @PolyDet, which this technically violates.
+    @Det StringBuilderDelimited out = new StringBuilderDelimited(lineSeparator);
 
     for (OptionInfo oi : options) {
       out.add(oi.toString());
