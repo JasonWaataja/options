@@ -1183,8 +1183,7 @@ public class Options {
     List<Integer> lengths = new ArrayList<Integer>();
     for (OptionGroupInfo gi : groups) {
       // Once again, the add method seems to require @Det argument here when we want @PolyDet
-      @SuppressWarnings("determinism")
-      @Det int len = maxOptionLength(gi.optionList, showUnpublicized);
+      int len = maxOptionLength(gi.optionList, showUnpublicized);
       lengths.add(len);
     }
     int maxLength = Collections.max(lengths);
