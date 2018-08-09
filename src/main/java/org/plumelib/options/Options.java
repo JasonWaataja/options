@@ -839,6 +839,7 @@ public class Options {
   }
 
   /** Print the classpath. */
+  @SuppressWarnings("determinism") // This is non-deterministic because of iteration order.
   static void printClassPath() {
     URLClassLoader sysLoader = (URLClassLoader) ClassLoader.getSystemClassLoader();
     if (sysLoader == null) {
@@ -885,6 +886,7 @@ public class Options {
    * @return all non-option arguments
    * @throws ArgException if the command line contains unknown option or misused options
    */
+  @SuppressWarnings("determinism") // Collections add bug.
   public String[] parse(String[] args) throws ArgException {
 
     List<String> nonOptions = new ArrayList<String>();
@@ -984,6 +986,7 @@ public class Options {
    * @return a string array analogous to the argument to {@code main}.
    */
   // TODO: should this throw some exceptions?
+  @SuppressWarnings("determinism") // Collections add issue.
   public static String[] tokenize(String args) {
 
     // Split the args string on whitespace boundaries accounting for quoted
@@ -1044,7 +1047,7 @@ public class Options {
    */
   public String[] parse(@Det String message, String[] args) {
 
-    String[] nonOptions = null;
+    @PolyDet String @PolyDet [] nonOptions = null;
 
     try {
       nonOptions = parse(args);
@@ -1075,7 +1078,7 @@ public class Options {
    */
   public String[] parse(boolean showUsageOnError, String[] args) {
 
-    String[] nonOptions = null;
+    @PolyDet String @PolyDet [] nonOptions = null;
 
     try {
       nonOptions = parse(args);
@@ -1145,6 +1148,7 @@ public class Options {
    *     unpublicized. If empty and option groups are not being used, will return usage for all
    *     options that are not unpublicized.
    */
+  @SuppressWarnings("determinism") // Collections add issue.
   public @NonDet String usage(boolean showUnpublicized, String... groupNames) {
     if (!hasGroups) {
       if (groupNames.length > 0) {
@@ -1272,6 +1276,7 @@ public class Options {
    * @param argValue a string representation of the value
    * @throws ArgException if there are any errors
    */
+  @SuppressWarnings("determinism") // Collections add bug and the fact that ArgException must be constructed as deterministic.
   private void setArg(OptionInfo oi, String argName, /*@Nullable*/ String argValue)
       throws ArgException {
 
@@ -1313,10 +1318,8 @@ public class Options {
           } else if (argValueLowercase.equals("false") || argValueLowercase.equals("f")) {
             val = false;
           } else {
-            @SuppressWarnings("determinism")
-            @Det ArgException e = new ArgException(
+            throw new ArgException(
                 "Value \"%s\" for argument %s is not a boolean", argValue, argName);
-            throw e;
           }
           argValue = (val) ? "true" : "false";
           // System.out.printf ("Setting %s to %s%n", argName, val);
@@ -1326,17 +1329,13 @@ public class Options {
           try {
             val = Byte.decode(argValue);
           } catch (Exception e) {
-            @SuppressWarnings("determinism")
-            @Det ArgException exception = new ArgException("Value \"%s\" for argument %s is not a byte", argValue, argName);
-            throw exception;
+            throw new ArgException("Value \"%s\" for argument %s is not a byte", argValue, argName);
           }
           f.setByte(oi.obj, val);
         } else if (type == Character.TYPE) {
           if (argValue.length() != 1) {
-            @SuppressWarnings("determinism")
-            @Det ArgException e = new ArgException(
+            throw  new ArgException(
                 "Value \"%s\" for argument %s is not a single character", argValue, argName);
-            throw e;
           }
           char val = argValue.charAt(0);
           f.setChar(oi.obj, val);
@@ -1345,10 +1344,8 @@ public class Options {
           try {
             val = Short.decode(argValue);
           } catch (Exception e) {
-            @SuppressWarnings("determinism")
-            @Det ArgException exception = new ArgException(
+            throw new ArgException(
                 "Value \"%s\" for argument %s is not a short integer", argValue, argName);
-            throw exception;
           }
           f.setShort(oi.obj, val);
         } else if (type == Integer.TYPE) {
@@ -1356,10 +1353,8 @@ public class Options {
           try {
             val = Integer.decode(argValue);
           } catch (Exception e) {
-            @SuppressWarnings("determinism")
-            @Det ArgException exception = new ArgException(
+            throw new ArgException(
                 "Value \"%s\" for argument %s is not an integer", argValue, argName);
-            throw exception;
           }
           f.setInt(oi.obj, val);
         } else if (type == Long.TYPE) {
@@ -1367,10 +1362,8 @@ public class Options {
           try {
             val = Long.decode(argValue);
           } catch (Exception e) {
-            @SuppressWarnings("determinism")
-            @Det ArgException exception = new ArgException(
+            throw new ArgException(
                 "Value \"%s\" for argument %s is not a long integer", argValue, argName);
-            throw exception;
           }
           f.setLong(oi.obj, val);
         } else if (type == Float.TYPE) {
@@ -1378,10 +1371,8 @@ public class Options {
           try {
             val = Float.valueOf(argValue);
           } catch (Exception e) {
-            @SuppressWarnings("determinism")
-            @Det ArgException exception = new ArgException(
+            throw new ArgException(
                 "Value \"%s\" for argument %s is not a float", argValue, argName);
-            throw exception;
           }
           f.setFloat(oi.obj, val);
         } else if (type == Double.TYPE) {
@@ -1389,10 +1380,8 @@ public class Options {
           try {
             val = Double.valueOf(argValue);
           } catch (Exception e) {
-            @SuppressWarnings("determinism")
-            @Det ArgException exception = new ArgException(
+            throw new ArgException(
                 "Value \"%s\" for argument %s is not a double", argValue, argName);
-            throw exception;
           }
           f.setDouble(oi.obj, val);
         } else { // unexpected type
@@ -1405,7 +1394,7 @@ public class Options {
         // argument value.
         if (oi.list != null) {
           if (spaceSeparatedLists) {
-            String[] aarr = argValue.split("  *");
+            @PolyDet String @PolyDet [] aarr = argValue.split("  *");
             for (String aval : aarr) {
               // TODO: Is this actually ok?
               // This is weird because list is a @Det field of a @PolyDet parameter. This should be

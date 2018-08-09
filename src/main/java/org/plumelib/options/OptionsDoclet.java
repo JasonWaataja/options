@@ -541,6 +541,7 @@ public class OptionsDoclet {
   // HTML and Javadoc processing methods
 
   /** Adds Javadoc info to each option in {@code options.getOptions()}. */
+  @SuppressWarnings("determinism") // This is non-deterministic because of iteration order.
   public void processJavadoc() {
     for (Options.OptionInfo oi : options.getOptions()) {
       ClassDoc optDoc = root.classNamed(oi.getDeclaringClass().getName());
@@ -570,6 +571,7 @@ public class OptionsDoclet {
   }
 
   /** Initializes {@link Options.OptionInfo.enumJdoc} for the given {@code OptionInfo}. */
+  @SuppressWarnings("determinism") // Collections put issue.
   private void processEnumJavadoc(Options.OptionInfo oi) {
     Enum<?>[] constants = (Enum<?>[]) oi.baseType.getEnumConstants();
     if (constants == null) {
@@ -821,7 +823,7 @@ public class OptionsDoclet {
    */
   public static String javadocToHtml(Doc doc) {
     StringBuilder b = new StringBuilder();
-    Tag[] tags = doc.inlineTags();
+    @PolyDet Tag @PolyDet [] tags = doc.inlineTags();
     for (Tag tag : tags) {
       String kind = tag.kind();
       String text = tag.text();
@@ -835,7 +837,7 @@ public class OptionsDoclet {
         }
       }
     }
-    SeeTag[] seetags = doc.seeTags();
+    @PolyDet SeeTag @PolyDet [] seetags = doc.seeTags();
     if (seetags.length > 0) {
       b.append(" See: ");
       {
