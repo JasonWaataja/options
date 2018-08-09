@@ -173,9 +173,7 @@ import org.checkerframework.common.value.qual.*;
 @SuppressWarnings("deprecation") // JDK 9 deprecates com.sun.javadoc package
 public class OptionsDoclet {
 
-  @SuppressWarnings("determinism") // The line separator is technichally non deterministic but we want our methods
-                                   // to treat it as such.
-  private static String eol = System.getProperty("line.separator");
+  private static @NonDet String eol = System.getProperty("line.separator");
 
   private static final /*@Format({})*/ String USAGE =
       "Provided by Options doclet:%n"
@@ -484,7 +482,7 @@ public class OptionsDoclet {
    * @return the user-visible doclet output
    * @throws Exception if there is trouble
    */
-  public String output() throws Exception {
+  public @NonDet String output() throws Exception {
     if (docFile == null) {
       if (formatJavadoc) {
         return optionsToJavadoc(0, 99);
@@ -498,8 +496,9 @@ public class OptionsDoclet {
 
   /** Get the result of inserting the options documentation into the docfile. */
   /*@RequiresNonNull("docFile")*/
-  private String newDocFileText() throws Exception {
-    StringBuilderDelimited b = new StringBuilderDelimited(eol);
+  private @NonDet String newDocFileText() throws Exception {
+    @SuppressWarnings("determinism") // Constructor parameters.
+    @NonDet StringBuilderDelimited b = new StringBuilderDelimited(eol);
     BufferedReader doc = Files.newBufferedReader(docFile.toPath(), UTF_8);
     String docline;
     boolean replacing = false;
@@ -611,8 +610,9 @@ public class OptionsDoclet {
    * @param refillWidth the number of columns to fit the text into, by breaking lines
    * @return the HTML documentation for the underlying Options instance
    */
-  public String optionsToHtml(int refillWidth) {
-    StringBuilderDelimited b = new StringBuilderDelimited(eol);
+  public @NonDet String optionsToHtml(int refillWidth) {
+    @SuppressWarnings("determinism") // Constructor parameters.
+    @NonDet StringBuilderDelimited b = new StringBuilderDelimited(eol);
 
     if (includeClassDoc && root.classes().length > 0) {
       b.add(OptionsDoclet.javadocToHtml(root.classes()[0]));
@@ -661,8 +661,9 @@ public class OptionsDoclet {
    * @param refillWidth the number of columns to fit the text into, by breaking lines
    * @return the HTML documentation for the underlying Options instance
    */
-  public String optionsToJavadoc(int padding, int refillWidth) {
-    StringBuilderDelimited b = new StringBuilderDelimited(eol);
+  public @NonDet String optionsToJavadoc(int padding, int refillWidth) {
+    @SuppressWarnings("determinism") // Constructor parameters.
+    @NonDet StringBuilderDelimited b = new StringBuilderDelimited(eol);
     Scanner s = new Scanner(optionsToHtml(refillWidth - padding - 2));
 
     while (s.hasNextLine()) {
@@ -681,9 +682,10 @@ public class OptionsDoclet {
   }
 
   /** Get the HTML describing many options, formatted as an HTML list. */
-  private String optionListToHtml(
+  private @NonDet String optionListToHtml(
       List<Options.OptionInfo> optList, int padding, int firstLinePadding, int refillWidth) {
-    StringBuilderDelimited b = new StringBuilderDelimited(eol);
+    @SuppressWarnings("determinism") // Constructor parameters.
+    @NonDet StringBuilderDelimited b = new StringBuilderDelimited(eol);
     for (Options.OptionInfo oi : optList) {
       if (oi.unpublicized) {
         continue;
@@ -703,11 +705,11 @@ public class OptionsDoclet {
   }
 
   /** refillWidth includes the padding. */
-  private String refill(String in, int padding, int firstLinePadding, int refillWidth) {
+  private @NonDet String refill(@NonDet String in, int padding, int firstLinePadding, int refillWidth) {
     if (refillWidth <= 0) {
       return in;
     }
-    @Det String eol = this.eol;
+    String eol = this.eol;
 
     // suffix is text *not* to refill.
     String suffix = null;
@@ -727,7 +729,8 @@ public class OptionsDoclet {
       compressedSpaces = compressedSpaces.substring(1);
     }
     String oneLine = StringUtils.repeat(" ", firstLinePadding) + compressedSpaces;
-    StringBuilderDelimited multiLine = new StringBuilderDelimited(eol);
+    @SuppressWarnings("determinism") // Constructor parameters.
+    @NonDet StringBuilderDelimited multiLine = new StringBuilderDelimited(eol);
     while (oneLine.length() > refillWidth) {
       int breakLoc = oneLine.lastIndexOf(' ', refillWidth);
       if (breakLoc == -1) {
@@ -773,10 +776,7 @@ public class OptionsDoclet {
       b.append(" <code>[+]</code>");
     }
     f.format(".%n ");
-    // TODO: See if this has been fixed in the determinism checker.
-    // f.format here requires a @Det argument, even though we want it to only have to be @PolyDet.
-    // This is probably a bug with the checker.
-    @SuppressWarnings("determinism")
+    @SuppressWarnings("determinism") // For outputing to a stream.
     @Det String repeated = StringUtils.repeat(" ", padding);
     f.format("%s", repeated);
 

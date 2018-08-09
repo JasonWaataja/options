@@ -699,7 +699,7 @@ public class Options {
         }
         try {
           if (debugEnabled) {
-            @SuppressWarnings("determinism")
+            @SuppressWarnings("determinism") // Printing to a stream.
             @Det String msg = Arrays.toString(f.getDeclaredAnnotations());
             System.err.printf(
                 "  with annotations %s%n", msg);
@@ -822,7 +822,7 @@ public class Options {
       /*@Nullable*/ T cast = f.getAnnotation((Class</*@NonNull*/ T>) annotationClass);
       annotation = cast;
     } catch (Exception e) {
-      @SuppressWarnings("determinism")
+      @SuppressWarnings("determinism") // Printing to a stream.
       @Det String msg = String.format(
           "Exception in call to f.getAnnotation(%s)%n  for f=%s%n  %s%nClasspath =%n",
           annotationClass, f, e.getMessage());
@@ -950,7 +950,7 @@ public class Options {
         if (oi.argumentRequired() && (argValue == null)) {
           ii++;
           if (ii >= args.length) {
-            @SuppressWarnings("determinism")
+            @SuppressWarnings("determinism") // Constructor parameters.
             @Det ArgException e =  new ArgException("option %s requires an argument", arg);
             throw e;
           }
@@ -1111,7 +1111,7 @@ public class Options {
     if (usageSynopsis != null) {
       ps.printf("Usage: %s%n", usageSynopsis);
     }
-    @SuppressWarnings("determinism")
+    @SuppressWarnings("determinism") // Printing to a stream.
     @Det String usage = usage();
     ps.println(usage);
     if (hasListOption) {
@@ -1189,7 +1189,7 @@ public class Options {
     }
     int maxLength = Collections.max(lengths);
 
-    @SuppressWarnings("determinism")
+    @SuppressWarnings("determinism") // Constructor parameters.
     @NonDet StringBuilderDelimited buf = new StringBuilderDelimited(lineSeparator);
     for (OptionGroupInfo gi : groups) {
       buf.add(String.format("%n%s:", gi.name));
@@ -1204,7 +1204,7 @@ public class Options {
    * if any option has list type.
    */
   private @NonDet String formatOptions(List<OptionInfo> optList, int maxLength, boolean showUnpublicized) {
-    @SuppressWarnings("determinism")
+    @SuppressWarnings("determinism") // Constructor parameters.
     @NonDet StringBuilderDelimited buf = new StringBuilderDelimited(lineSeparator);
     for (OptionInfo oi : optList) {
       if (oi.unpublicized && !showUnpublicized) {
@@ -1449,7 +1449,7 @@ public class Options {
         }
       }
     } catch (Exception e) {
-      @SuppressWarnings("determinism")
+      @SuppressWarnings("determinism") // Constructor parameters.
       @Det ArgException exception = new ArgException("Invalid argument (%s) for argument %s", argValue, argName);
       throw exception;
     }
@@ -1464,7 +1464,9 @@ public class Options {
    *
    * @param <T> the enum type
    */
+  @SuppressWarnings("determinsim") // Nested generics.
   private <T extends Enum<T>> T getEnumValue(Class<T> enumType, String name) {
+    @SuppressWarnings("determinism") // Issues with return type.
     T[] constants = enumType.getEnumConstants();
     if (constants == null) {
       throw new IllegalArgumentException(enumType.getName() + " is not an enum type");
@@ -1535,7 +1537,7 @@ public class Options {
    *     setting for each option
    */
   public @NonDet String settings(boolean showUnpublicized) {
-    @SuppressWarnings("determinism")
+    @SuppressWarnings("determinism") // Constructor parameters.
     @NonDet StringBuilderDelimited out = new StringBuilderDelimited(lineSeparator);
 
     // Determine the length of the longest name
@@ -1569,7 +1571,7 @@ public class Options {
   }) // side effect to local state (string creation)
   /*@SideEffectFree*/
   public String toString(/*>>>@GuardSatisfied Options this*/) {
-    @SuppressWarnings("determinism")
+    @SuppressWarnings("determinism") // Need to return @PolyDet from toString.
     // Below should be a @NonDet builder, but to satisfy the contract of
     // toString, the result must be @PolyDet, which this technically violates.
     @Det StringBuilderDelimited out = new StringBuilderDelimited(lineSeparator);
