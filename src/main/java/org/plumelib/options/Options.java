@@ -29,16 +29,22 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.regex.Pattern;
 
-/*>>>
-import org.checkerframework.checker.formatter.qual.*;
-import org.checkerframework.checker.initialization.qual.*;
-import org.checkerframework.checker.lock.qual.*;
-import org.checkerframework.checker.nullness.qual.*;
-import org.checkerframework.dataflow.qual.*;
-*/
 import org.checkerframework.checker.determinism.qual.*;
+import org.checkerframework.checker.formatter.qual.FormatMethod;
+import org.checkerframework.checker.initialization.qual.Initialized;
+import org.checkerframework.checker.initialization.qual.UnknownInitialization;
+import org.checkerframework.checker.lock.qual.GuardSatisfied;
+import org.checkerframework.checker.nullness.qual.KeyFor;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.NonRaw;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.Raw;
+import org.checkerframework.dataflow.qual.Pure;
+import org.checkerframework.dataflow.qual.SideEffectFree;
 
 /**
  * The Options class:
@@ -280,7 +286,7 @@ public class Options {
    * <p>This field is public so that clients can reset it. Setting it enables one program to
    * masquerade as another program, based on parsed options.
    */
-  public /*@Nullable*/ String usageSynopsis = null;
+  public @Nullable String usageSynopsis = null;
 
   /**
    * In usage messages, use dashes (hyphens) to split words in option names. This only applies to
@@ -348,10 +354,10 @@ public class Options {
     //    Option option;
 
     /** Object containing the field. Null if the field is static. */
-    /*@UnknownInitialization*/ /*@Raw*/ /*@Nullable*/ Object obj;
+    @UnknownInitialization @Raw @Nullable Object obj;
 
     /** Short (one-character) argument name. */
-    /*@Nullable*/ String shortName;
+    @Nullable String shortName;
 
     /** Long argument name. */
     String longName;
@@ -363,13 +369,13 @@ public class Options {
     String description;
 
     /** Full Javadoc description. */
-    /*@Nullable*/ String jdoc;
+    @Nullable String jdoc;
 
     /**
      * Maps names of enum constants to their corresponding Javadoc. This is used by OptionsDoclet to
      * generate documentation for enum-type options. Null if the baseType is not an Enum.
      */
-    /*@MonotonicNonNull*/ Map<String, String> enumJdoc;
+    @MonotonicNonNull Map<String, String> enumJdoc;
 
     /**
      * Name of the argument type. Defaults to the type of the field, but user can override this in
@@ -381,7 +387,7 @@ public class Options {
     Class<?> baseType;
 
     /** Default value of the option as a string. */
-    /*@Nullable*/ String defaultStr = null;
+    @Nullable String defaultStr = null;
 
     /**
      * If true, the default value string for this option will be excluded from OptionsDoclet
@@ -390,24 +396,24 @@ public class Options {
     boolean noDocDefault = false;
 
     /** If the option is a list, this references that list. */
-    /*@MonotonicNonNull*/ List<Object> list = null;
+    @MonotonicNonNull List<Object> list = null;
 
     /** Constructor that takes one String for the type. */
-    /*@Nullable*/ Constructor<?> constructor = null;
+    @Nullable Constructor<?> constructor = null;
 
     /**
      * Factory that takes a string (some classes don't have a string constructor) and always returns
      * non-null.
      */
-    /*@Nullable*/ Method factory = null;
+    @Nullable Method factory = null;
 
     /** The second argument to the factory; non-null if needed. */
-    /*@Nullable*/ Object factoryArg2 = null;
+    @Nullable Object factoryArg2 = null;
 
     /**
      * If true, this OptionInfo is not output when printing documentation.
      *
-     * @see #usage()
+     * @see #printUsage()
      */
     boolean unpublicized;
 
@@ -424,7 +430,7 @@ public class Options {
     OptionInfo(
         @Det Field field,
         @Det Option option,
-        @Det /*@UnknownInitialization*/ /*@Raw*/ /*@Nullable*/ Object obj,
+        @Det @UnknownInitialization @Raw @Nullable Object obj,
         @Det boolean unpublicized) {
       this.field = field;
       //      this.option = option;
@@ -547,6 +553,8 @@ public class Options {
     /**
      * Returns a short synopsis of the option in the form <span style="white-space: nowrap;">{@code
      * -s --long=<type>}</span>.
+     *
+     * @return a synopsis of how the option can be provided on the command line
      */
     public String synopsis() {
       String prefix = useSingleDash ? "-" : "--";
@@ -567,8 +575,8 @@ public class Options {
      * @return a one-line description of the option
      */
     @Override
-    /*@SideEffectFree*/
-    public String toString(/*>>>@GuardSatisfied OptionInfo this*/) {
+    @SideEffectFree
+    public String toString(@GuardSatisfied OptionInfo this) {
       String prefix = useSingleDash ? "-" : "--";
       String shortNameStr = "";
       if (shortName != null) {
@@ -596,7 +604,7 @@ public class Options {
     /**
      * If true, this group of options will not be printed in usage output by default. However, the
      * usage information for this option group can be printed by specifying the group explicitly in
-     * the call to {@link #usage}.
+     * the call to {@link #printUsage}.
      */
     boolean unpublicized;
 
@@ -618,6 +626,8 @@ public class Options {
     /**
      * If false, this group of options does not contain any publicized options, so it will not be
      * included in the default usage message.
+     *
+     * @return true if this group of options contains at least one publicized option
      */
     boolean anyPublicized() {
       for (OptionInfo oi : optionList) {
@@ -637,7 +647,7 @@ public class Options {
    *
    * @param args the classes whose options to process
    */
-  public Options(@Det /*@UnknownInitialization*/ /*@Raw*/ Object... args) {
+  public Options(@Det @UnknownInitialization @Raw Object... args) {
     this("", args);
   }
 
@@ -650,7 +660,7 @@ public class Options {
    * @param usageSynopsis a synopsis of how to call your program
    * @param args the classes whose options to process
    */
-  public Options(@Det String usageSynopsis, @Det /*@UnknownInitialization*/ /*@Raw*/ Object... args) {
+  public Options(@Det String usageSynopsis, @Det @UnknownInitialization @Raw Object... args) {
 
     if (args.length == 0) {
       throw new Error("Must pass at least one object to Options constructor");
@@ -674,8 +684,7 @@ public class Options {
         "rawness", // if isClass is true, obj is a non-null initialized Class
         "initialization" // if isClass is true, obj is a non-null initialized Class
       })
-      /*@Initialized*/ /*@NonRaw*/ /*@NonNull*/ Class<?> clazz =
-          (isClass ? (/*@Initialized*/ /*@NonRaw*/ /*@NonNull*/ Class<?>) obj : obj.getClass());
+      @Initialized @NonRaw @NonNull Class<?> clazz = (isClass ? (@Initialized @NonRaw @NonNull Class<?>) obj : obj.getClass());
       if (mainClass == Void.TYPE) {
         mainClass = clazz;
       }
@@ -688,7 +697,7 @@ public class Options {
         try {
           // Possible exception because "obj" is not yet initialized; catch it and proceed
           @SuppressWarnings("cast")
-          Object objNonraw = (/*@Initialized*/ /*@NonRaw*/ Object) obj;
+          Object objNonraw = (@Initialized @NonRaw Object) obj;
           if (debugEnabled) {
             System.err.printf("Considering field %s of object %s%n", f, objNonraw);
           }
@@ -728,8 +737,7 @@ public class Options {
 
         @SuppressWarnings(
             "initialization") // new C(underInit) yields @UnderInitialization; @Initialized is safe
-        /*@Initialized*/ OptionInfo oi =
-            new OptionInfo(f, option, isClass ? null : obj, unpublicized);
+        @Initialized OptionInfo oi = new OptionInfo(f, option, isClass ? null : obj, unpublicized);
         options.add(oi);
 
         OptionGroup optionGroup = safeGetAnnotation(f, OptionGroup.class);
@@ -778,7 +786,7 @@ public class Options {
           groupMap.put(name, gi);
           currentGroup = name;
         } // currentGroup is non-null at this point
-        /*@NonNull*/ OptionGroupInfo ogi = groupMap.get(currentGroup);
+        @NonNull OptionGroupInfo ogi = groupMap.get(currentGroup);
         ogi.optionList.add(oi);
       } // loop through fields
     } // loop through args
@@ -812,14 +820,21 @@ public class Options {
   }
 
   /**
-   * Like getAnnotation, but returns null (and prints a warning) rather than throwing an exception.
+   * Like {@link Field#getAnnotation}, but returns null (and prints a warning) rather than throwing
+   * an exception.
+   *
+   * @param <T> the type of the annotation to query for and return if present
+   * @param f the Field that may contain the annotation
+   * @param annotationClass the Class object corresponding to the annotation type, or null
+   * @return this element's annotation for the specified annotation type if present on this element,
+   *     else null
    */
-  private static <T extends Annotation> /*@Nullable*/ T safeGetAnnotation(
+  private static <T extends Annotation> @Nullable T safeGetAnnotation(
       Field f, Class<T> annotationClass) {
-    /*@Nullable*/ T annotation;
+    @Nullable T annotation;
     try {
       @SuppressWarnings("cast") // cast is redundant (except for type annotations)
-      /*@Nullable*/ T cast = f.getAnnotation((Class</*@NonNull*/ T>) annotationClass);
+      @Nullable T cast = f.getAnnotation((Class<@NonNull T>) annotationClass);
       annotation = cast;
     } catch (Exception e) {
       @SuppressWarnings("determinism") // Printing to a stream.
@@ -1190,7 +1205,7 @@ public class Options {
     int maxLength = Collections.max(lengths);
 
     @SuppressWarnings("determinism") // Constructor parameters.
-    @NonDet StringBuilderDelimited buf = new StringBuilderDelimited(lineSeparator);
+    @NonDet StringJoiner buf = new StringJoiner(lineSeparator);
     for (OptionGroupInfo gi : groups) {
       buf.add(String.format("%n%s:", gi.name));
       buf.add(formatOptions(gi.optionList, maxLength, showUnpublicized));
@@ -1202,10 +1217,15 @@ public class Options {
   /**
    * Format a list of options for use in generating usage messages. Also sets {@link #hasListOption}
    * if any option has list type.
+   *
+   * @param optList the options to format
+   * @param maxLength the maximum number of characters in the output
+   * @param showUnpublicized if true, include unpublicized options in the output
+   * @return the formatted options
    */
   private @NonDet String formatOptions(List<OptionInfo> optList, int maxLength, boolean showUnpublicized) {
     @SuppressWarnings("determinism") // Constructor parameters.
-    @NonDet StringBuilderDelimited buf = new StringBuilderDelimited(lineSeparator);
+    @NonDet StringJoiner buf = new StringJoiner(lineSeparator);
     for (OptionInfo oi : optList) {
       if (oi.unpublicized && !showUnpublicized) {
         continue;
@@ -1231,6 +1251,8 @@ public class Options {
    * Return the length of the longest synopsis message in a list of options. Useful for aligning
    * options in usage strings.
    *
+   * @param optList the options whose synopsis messages to measure
+   * @param showUnpublicized if true, include unpublicized options in the computation
    * @return the length of the longest synopsis message in a list of options
    */
   private @PolyDet("down") int maxOptionLength(List<OptionInfo> optList, boolean showUnpublicized) {
@@ -1250,12 +1272,12 @@ public class Options {
   // Package-private accessors/utility methods that are needed by the OptionsDoclet class to
   // generate HTML documentation.
 
-  /*@Pure*/
+  @Pure
   boolean hasGroups() {
     return hasGroups;
   }
 
-  /*@Pure*/
+  @Pure
   boolean getUseSingleDash() {
     return useSingleDash;
   }
@@ -1277,7 +1299,7 @@ public class Options {
    * @throws ArgException if there are any errors
    */
   @SuppressWarnings("determinism") // Collections add bug and the fact that ArgException must be constructed as deterministic.
-  private void setArg(OptionInfo oi, String argName, /*@Nullable*/ String argValue)
+  private void setArg(OptionInfo oi, String argName, @Nullable String argValue)
       throws ArgException {
 
     Field f = oi.field;
@@ -1421,13 +1443,19 @@ public class Options {
   }
 
   /**
-   * Create an instance of the correct type by passing the argument value string to the constructor.
-   * The only expected error is some sort of parse error from the constructor.
+   * Given a value string supplied on the command line, create an object. The only expected error is
+   * some sort of parse error from the constructor.
+   *
+   * @param oi the option corresponding to {@code argName} and {@code argValue}
+   * @param argName the argument name -- used only for diagnostics
+   * @param argValue the value supplied on the command line, which this method parses
+   * @return a value, whose printed representation is {@code argValue}
+   * @throws ArgException if the user supplied an incorrect string (contained in {@code argValue})
    */
   @SuppressWarnings({"nullness", "determinism"}) // static method, so null first arg is OK: oi.factory
   // Suppressing determinism because of use of a @Det field in @PolyDet return
   // valued method.
-  private /*@NonNull*/ Object getRefArg(OptionInfo oi, String argName, String argValue)
+  private @NonNull Object getRefArg(OptionInfo oi, String argName, String argValue)
       throws ArgException {
 
     Object val;
@@ -1462,7 +1490,10 @@ public class Options {
    * hyphen-insensitive (hyphens can be used in place of underscores). This allows for greater
    * flexibility when specifying enum types as command-line arguments.
    *
-   * @param <T> the enum type
+   * @param <T> the enum type whose constant is to be returned
+   * @param enumType the Class object of the enum type from which to return a constant
+   * @param name the name of the constant to return
+   * @return the enum constant of the specified enum type with the specified name
    */
   @SuppressWarnings("determinsim") // Nested generics.
   private <T extends Enum<T>> T getEnumValue(Class<T> enumType, String name) {
@@ -1482,8 +1513,11 @@ public class Options {
   }
 
   /**
-   * Return a short name for the specified type for use in messages.
+   * Return a short name for the specified type for use in messages. This is usually the lowercase
+   * simple name of the type, but there are special cases (for files, regular expressions, enums,
+   * ...).
    *
+   * @param type the type whoso short name to return
    * @return a short name for the specified type for use in messages
    */
   private static String typeShortName(Class<?> type) {
@@ -1538,7 +1572,7 @@ public class Options {
    */
   public @NonDet String settings(boolean showUnpublicized) {
     @SuppressWarnings("determinism") // Constructor parameters.
-    @NonDet StringBuilderDelimited out = new StringBuilderDelimited(lineSeparator);
+    @NonDet StringJoiner out = new StringJoiner(lineSeparator);
 
     // Determine the length of the longest name
     int maxLength = maxOptionLength(options, showUnpublicized);
@@ -1569,12 +1603,12 @@ public class Options {
     "purity",
     "method.guarantee.violated"
   }) // side effect to local state (string creation)
-  /*@SideEffectFree*/
-  public String toString(/*>>>@GuardSatisfied Options this*/) {
+  @SideEffectFree
+  public String toString(@GuardSatisfied Options this) {
     @SuppressWarnings("determinism") // Need to return @PolyDet from toString.
     // Below should be a @NonDet builder, but to satisfy the contract of
     // toString, the result must be @PolyDet, which this technically violates.
-    @Det StringBuilderDelimited out = new StringBuilderDelimited(lineSeparator);
+    @Det StringJoiner out = new StringJoiner(lineSeparator);
 
     for (OptionInfo oi : options) {
       out.add(oi.toString());
@@ -1594,18 +1628,18 @@ public class Options {
       super(s);
     }
 
-    /*@FormatMethod*/
-    public ArgException(String format, /*@Nullable*/ Object... args) {
+    @FormatMethod
+    public ArgException(String format, @Nullable Object... args) {
       super(String.format(format, args));
     }
   }
 
   private static class ParseResult {
-    /*@Nullable*/ String shortName;
-    /*@Nullable*/ String typeName;
+    @Nullable String shortName;
+    @Nullable String typeName;
     String description;
 
-    ParseResult(@Det /*@Nullable*/ String shortName, @Det /*@Nullable*/ String typeName, @Det String description) {
+    ParseResult(@Det @Nullable String shortName, @Det @Nullable String typeName, @Det String description) {
       this.shortName = shortName;
       this.typeName = typeName;
       this.description = description;
@@ -1613,15 +1647,19 @@ public class Options {
   }
 
   /**
-   * Parse an option value and return its three components (shortName, typeName, and description).
-   * The shortName and typeName are null if they are not specified in the string.
+   * Parse an option value (the argument to {@code @Option}) and return its three components
+   * (shortName, typeName, and description). The shortName and typeName are null if they are not
+   * specified in the string.
+   *
+   * @param val the string to parse, which is an argument to {@code @Option}
+   * @return a description of the option
    */
   private static ParseResult parseOption(@Det String val) {
 
     // Get the short name, long name, and description
     String shortName;
     String typeName;
-    /*@NonNull*/ String description;
+    @NonNull String description;
 
     // Get the short name (if any)
     if (val.startsWith("-")) {
@@ -1681,9 +1719,9 @@ public class Options {
    * @param m a map whose keyset will be sorted
    * @return a sorted version of m.keySet()
    */
-  private static <K extends Comparable<? super K>, V> Collection</*@KeyFor("#1")*/ K> sortedKeySet(
+  private static <K extends Comparable<? super K>, V> Collection<@KeyFor("#1") K> sortedKeySet(
       Map<K, V> m) {
-    ArrayList</*@KeyFor("#1")*/ K> theKeys = new ArrayList</*@KeyFor("#1")*/ K>(m.keySet());
+    ArrayList<@KeyFor("#1") K> theKeys = new ArrayList<@KeyFor("#1") K>(m.keySet());
     Collections.sort(theKeys);
     return theKeys;
   }

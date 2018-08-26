@@ -32,17 +32,16 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.StringJoiner;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.checkerframework.checker.determinism.qual.*;
 
-/*>>>
-import org.checkerframework.checker.formatter.qual.*;
-import org.checkerframework.checker.index.qual.*;
-import org.checkerframework.checker.nullness.qual.*;
-import org.checkerframework.checker.signature.qual.*;
-import org.checkerframework.common.value.qual.*;
-*/
+import org.checkerframework.checker.formatter.qual.Format;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
+import org.checkerframework.checker.signature.qual.BinaryName;
+import org.checkerframework.common.value.qual.MinLen;
 
 /**
  * Generates HTML documentation of command-line options, for use in a manual or in a Javadoc class
@@ -168,14 +167,15 @@ import org.checkerframework.common.value.qual.*;
  * @see org.plumelib.options.Unpublicized
  */
 
-// This doesn't itself use org.plumelib.options.Options for its command-line option processing because a Doclet is
+// This doesn't itself use org.plumelib.options.Options for its command-line option processing
+// because a Doclet is
 // required to implement the optionLength() and validOptions() methods.
 @SuppressWarnings("deprecation") // JDK 9 deprecates com.sun.javadoc package
 public class OptionsDoclet {
 
   private static @NonDet String eol = System.getProperty("line.separator");
 
-  private static final /*@Format({})*/ String USAGE =
+  private static final @Format({}) String USAGE =
       "Provided by Options doclet:%n"
           + "-docfile <file>        Specify file into which options documentation is inserted%n"
           + "-outfile <file>        Specify destination for resulting output%n"
@@ -192,8 +192,8 @@ public class OptionsDoclet {
   private String startDelim = "<!-- start options doc (DO NOT EDIT BY HAND) -->";
   private String endDelim = "<!-- end options doc -->";
 
-  private /*@Nullable*/ File docFile = null;
-  private /*@Nullable*/ File outFile = null;
+  private @Nullable File docFile = null;
+  private @Nullable File outFile = null;
 
   /** If true, then edit docFile in place (and docFile is non-null). */
   private boolean inPlace = false;
@@ -233,7 +233,7 @@ public class OptionsDoclet {
       Class<?> clazz;
       try {
         @SuppressWarnings("signature") // Javadoc source code is not yet annotated
-        /*@BinaryNameForNonArray*/ String className = doc.qualifiedName();
+        @BinaryName String className = doc.qualifiedName();
         clazz = Class.forName(className, true, Thread.currentThread().getContextClassLoader());
       } catch (ClassNotFoundException e) {
         e.printStackTrace();
@@ -314,6 +314,8 @@ public class OptionsDoclet {
    * Tests the validity of command-line arguments passed to this doclet. Returns true if the option
    * usage is valid, and false otherwise. This method is automatically invoked by Javadoc.
    *
+   * <p>Also sets fields from the command-line arguments.
+   *
    * @param options the command-line options to be checked: an array of 1- or 2-element arrays,
    *     where the length depends on {@link #optionLength} applied to the first element
    * @param reporter where to report errors
@@ -323,7 +325,7 @@ public class OptionsDoclet {
    *     overview</a>
    */
   @SuppressWarnings("index") // dependent: os[1] is legal when optionLength(os[0])==2
-  public static boolean validOptions(String[] /*@MinLen(1)*/[] options, DocErrorReporter reporter) {
+  public static boolean validOptions(String[] @MinLen(1) [] options, DocErrorReporter reporter) {
     boolean hasDocFile = false;
     boolean hasOutFile = false;
     boolean hasDestDir = false;
@@ -404,7 +406,7 @@ public class OptionsDoclet {
    * @param options the command-line options to parse: a list of 1- or 2-element arrays
    */
   @SuppressWarnings("index") // dependent: os[1] is legal when optionLength(os[0])==2
-  public void setOptions(String[] /*@MinLen(1)*/[] options) {
+  public void setOptions(String[] @MinLen(1) [] options) {
     String outFilename = null;
     File destDir = null;
     for (int oi = 0; oi < options.length; oi++) {
@@ -439,6 +441,9 @@ public class OptionsDoclet {
 
   /**
    * Determine if a class needs to be instantiated in order to work properly with {@link Options}.
+   *
+   * @param clazz the class whose values will be created by command-line arguments
+   * @return true if the class needs to be instantiated before command-line arguments are parsed
    */
   private static boolean needsInstantiation(Class<?> clazz) {
     for (Field f : clazz.getDeclaredFields()) {
@@ -494,11 +499,16 @@ public class OptionsDoclet {
     return newDocFileText();
   }
 
-  /** Get the result of inserting the options documentation into the docfile. */
-  /*@RequiresNonNull("docFile")*/
+  /**
+   * Get the result of inserting the options documentation into the docfile.
+   *
+   * @return the docfile, but with the command-line argument documentation updated
+   * @throws Exception if there is trouble reading files
+   */
+  @RequiresNonNull("docFile")
   private @NonDet String newDocFileText() throws Exception {
     @SuppressWarnings("determinism") // Constructor parameters.
-    @NonDet StringBuilderDelimited b = new StringBuilderDelimited(eol);
+@NonDet    StringJoiner b = new StringJoiner(eol);
     BufferedReader doc = Files.newBufferedReader(docFile.toPath(), UTF_8);
     String docline;
     boolean replacing = false;
@@ -569,7 +579,12 @@ public class OptionsDoclet {
     }
   }
 
-  /** Initializes {@link Options.OptionInfo.enumJdoc} for the given {@code OptionInfo}. */
+  /**
+   * Initializes {@link Options.OptionInfo#enumJdoc} for the given {@code OptionInfo}: creates a
+   * mapping from enum constants to their Javadoc
+   *
+   * @param oi the enum option whose Javadoc to read
+   */
   @SuppressWarnings("determinism") // Collections put issue.
   private void processEnumJavadoc(Options.OptionInfo oi) {
     Enum<?>[] constants = (Enum<?>[]) oi.baseType.getEnumConstants();
@@ -610,9 +625,10 @@ public class OptionsDoclet {
    * @param refillWidth the number of columns to fit the text into, by breaking lines
    * @return the HTML documentation for the underlying Options instance
    */
-  public @NonDet String optionsToHtml(int refillWidth) {
+  public String optionsToHtml(int refillWidth) {
     @SuppressWarnings("determinism") // Constructor parameters.
-    @NonDet StringBuilderDelimited b = new StringBuilderDelimited(eol);
+    @NonDet
+    StringJoiner b = new StringJoiner(eol);
 
     if (includeClassDoc && root.classes().length > 0) {
       b.add(OptionsDoclet.javadocToHtml(root.classes()[0]));
@@ -663,7 +679,7 @@ public class OptionsDoclet {
    */
   public @NonDet String optionsToJavadoc(int padding, int refillWidth) {
     @SuppressWarnings("determinism") // Constructor parameters.
-    @NonDet StringBuilderDelimited b = new StringBuilderDelimited(eol);
+    @NonDet StringJoiner b = new StringJoiner(eol);
     Scanner s = new Scanner(optionsToHtml(refillWidth - padding - 2));
 
     while (s.hasNextLine()) {
@@ -681,11 +697,21 @@ public class OptionsDoclet {
     return b.toString();
   }
 
-  /** Get the HTML describing many options, formatted as an HTML list. */
+  /**
+   * Get the HTML describing many options, formatted as an HTML list.
+   *
+   * @param optList the options to document
+   * @param padding the number of leading spaces to add before each line of HTML output, except the
+   *     first one
+   * @param firstLinePadding the number of leading spaces to add before the first line of HTML
+   *     output
+   * @param refillWidth the number of columns to fit the text into, by breaking lines
+   * @return the options documented in HTML format
+   */
   private @NonDet String optionListToHtml(
       List<Options.OptionInfo> optList, int padding, int firstLinePadding, int refillWidth) {
     @SuppressWarnings("determinism") // Constructor parameters.
-    @NonDet StringBuilderDelimited b = new StringBuilderDelimited(eol);
+    @NonDet StringJoiner b = new StringJoiner(eol);
     for (Options.OptionInfo oi : optList) {
       if (oi.unpublicized) {
         continue;
@@ -704,8 +730,17 @@ public class OptionsDoclet {
     return b.toString();
   }
 
-  /** refillWidth includes the padding. */
-  private @NonDet String refill(@NonDet String in, int padding, int firstLinePadding, int refillWidth) {
+  /**
+   * Refill the string so that each line is {@code refillWidth} characters long.
+   *
+   * @param in the string to refill
+   * @param padding each line, other than the first, starts with this many spaces
+   * @param firstLinePadding the first line starts with this many spaces
+   * @param refillWidth the maximum width of each line in the output, including the padding
+   * @return a string in which no more than {@code refillWidth} characters appear between any two
+   *     end-of-line character sequences
+   */
+  private  @NonDet String refill( @NonDet String in, int padding, int firstLinePadding, int refillWidth) {
     if (refillWidth <= 0) {
       return in;
     }
@@ -716,8 +751,8 @@ public class OptionsDoclet {
     int ulPos = in.indexOf(eol + "<ul>" + eol);
     if (ulPos != -1) {
       @SuppressWarnings("index") // https://github.com/panacekcz/checker-framework/issues/23
-      String suffix_temp = in.substring(ulPos + eol.length());
-      suffix = suffix_temp;
+      String suffixTemp = in.substring(ulPos + eol.length());
+      suffix = suffixTemp;
       in = in.substring(0, ulPos);
     }
 
@@ -730,7 +765,7 @@ public class OptionsDoclet {
     }
     String oneLine = StringUtils.repeat(" ", firstLinePadding) + compressedSpaces;
     @SuppressWarnings("determinism") // Constructor parameters.
-    @NonDet StringBuilderDelimited multiLine = new StringBuilderDelimited(eol);
+    @NonDet StringJoiner multiLine = new StringJoiner(eol);
     while (oneLine.length() > refillWidth) {
       int breakLoc = oneLine.lastIndexOf(' ', refillWidth);
       if (breakLoc == -1) {
@@ -841,7 +876,7 @@ public class OptionsDoclet {
     if (seetags.length > 0) {
       b.append(" See: ");
       {
-        StringBuilderDelimited bb = new StringBuilderDelimited(", ");
+        StringJoiner bb = new StringJoiner(", ");
         for (SeeTag tag : seetags) {
           bb.add("<code>" + tag.text() + "</code>");
         }
