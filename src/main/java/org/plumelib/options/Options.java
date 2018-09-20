@@ -708,8 +708,8 @@ public class Options {
         }
         try {
           if (debugEnabled) {
-            String msg = Arrays.toString(f.getDeclaredAnnotations());
-            System.err.printf("  with annotations %s%n", msg);
+            System.err.printf(
+                "  with annotations %s%n", Arrays.toString(f.getDeclaredAnnotations()));
           }
         } catch (java.lang.ArrayStoreException e) {
           if (e.getMessage() != null
@@ -835,14 +835,12 @@ public class Options {
       @Nullable T cast = f.getAnnotation((Class<@NonNull T>) annotationClass);
       annotation = cast;
     } catch (Exception e) {
-      String msg =
-          String.format(
-              "Exception in call to f.getAnnotation(%s)%n  for f=%s%n  %s%nClasspath =%n",
-              annotationClass, f, e.getMessage());
       // Can get
       //   java.lang.ArrayStoreException: sun.reflect.annotation.TypeNotPresentExceptionProxy
       // when an annotation is not present at run time (example: @NonNull)
-      System.out.printf("%s", msg);
+      System.out.printf(
+          "Exception in call to f.getAnnotation(%s)%n  for f=%s%n  %s%nClasspath =%n",
+          annotationClass, f, e.getMessage());
       // e.printStackTrace();
       printClassPath();
       annotation = null;
@@ -965,8 +963,7 @@ public class Options {
         if (oi.argumentRequired() && (argValue == null)) {
           ii++;
           if (ii >= args.length) {
-            ArgException e = new ArgException("option %s requires an argument", arg);
-            throw e;
+            throw new ArgException("option %s requires an argument", arg);
           }
           argValue = args[ii];
         }
@@ -1125,8 +1122,7 @@ public class Options {
     if (usageSynopsis != null) {
       ps.printf("Usage: %s%n", usageSynopsis);
     }
-    String usage = usage();
-    ps.println(usage);
+    ps.println(usage());
     if (hasListOption) {
       ps.println();
       ps.println(LIST_HELP);
@@ -1195,9 +1191,8 @@ public class Options {
 
     List<Integer> lengths = new ArrayList<Integer>();
     for (OptionGroupInfo gi : groups) {
-      int len = maxOptionLength(gi.optionList, showUnpublicized);
       @SuppressWarnings("determinism") // adding to a local collection
-      boolean ignored = lengths.add(len);
+      boolean ignored = lengths.add(maxOptionLength(gi.optionList, showUnpublicized));
     }
     int maxLength = Collections.max(lengths);
 
@@ -1476,9 +1471,7 @@ public class Options {
         }
       }
     } catch (Exception e) {
-      ArgException exception =
-          new ArgException("Invalid argument (%s) for argument %s", argValue, argName);
-      throw exception;
+      throw new ArgException("Invalid argument (%s) for argument %s", argValue, argName);
     }
 
     return val;

@@ -36,7 +36,6 @@ import java.util.StringJoiner;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.checkerframework.checker.determinism.qual.*;
-
 import org.checkerframework.checker.formatter.qual.Format;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
@@ -214,15 +213,6 @@ public class OptionsDoclet {
    */
   @SuppressWarnings("determinism") // assigning @PolyDet args to @Det fields in constructrs
   public OptionsDoclet(RootDoc root, Options options) {
-    this.root = root;
-    this.options = options;
-  }
-
-  // Doclet-specific methods
-
-  /**
-   * Entry point for the doclet.
-   *
     this.root = root;
     this.options = options;
   }
@@ -728,7 +718,7 @@ public class OptionsDoclet {
    * @param refillWidth the number of columns to fit the text into, by breaking lines
    * @return the options documented in HTML format
    */
-  private @NonDet String optionListToHtml(
+  private String optionListToHtml(
       List<Options.OptionInfo> optList, int padding, int firstLinePadding, int refillWidth) {
     StringJoiner b = new StringJoiner(eol);
     for (Options.OptionInfo oi : optList) {
@@ -763,7 +753,6 @@ public class OptionsDoclet {
     if (refillWidth <= 0) {
       return in;
     }
-    String eol = this.eol;
 
     // suffix is text *not* to refill.
     String suffix = null;
@@ -829,8 +818,7 @@ public class OptionsDoclet {
       b.append(" <code>[+]</code>");
     }
     f.format(".%n ");
-    String repeated = StringUtils.repeat(" ", padding);
-    f.format("%s", repeated);
+    f.format("%s", StringUtils.repeat(" ", padding));
 
     String jdoc = ((oi.jdoc == null) ? "" : oi.jdoc);
     if (oi.noDocDefault || oi.defaultStr == null) {
