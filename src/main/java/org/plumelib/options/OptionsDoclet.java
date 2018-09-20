@@ -571,7 +571,6 @@ public class OptionsDoclet {
       if (optDoc != null) {
         String nameWithUnderscores = oi.longName.replace('-', '_');
         for (@Det FieldDoc fd : optDoc.fields()) {
-          FieldDoc a = fd;
           if (fd.name().equals(nameWithUnderscores)) {
             // If Javadoc for field is unavailable, then use the @Option
             // description in the documentation.
