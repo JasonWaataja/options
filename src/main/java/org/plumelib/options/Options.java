@@ -331,15 +331,18 @@ public class Options {
    *
    * @param enabled whether to enable or disable logging
    */
-  public void enableDebugLogging(@Det boolean enabled) {
+  @SuppressWarnings("determinism") // modifying @Det field with @PolyDet arg, same issue as with
+  // constructors
+  public void enableDebugLogging(@PolyDet Options this, @PolyDet("use") boolean enabled) {
     debugEnabled = enabled;
   }
 
   /** All of the argument options as a single string. Used for debugging. */
-  private @NonDet String optionsString = "";
+  private String optionsString = "";
 
   /** The system-dependent line separator. */
-  private static @NonDet String lineSeparator = System.getProperty("line.separator");
+  @SuppressWarnings("determinism") // https://github.com/t-rasmud/checker-framework/issues/37
+  private static String lineSeparator = System.getProperty("line.separator");
 
   /** Information about an option. */
   class OptionInfo {
@@ -424,11 +427,12 @@ public class Options {
      * @param obj the object whose field will be set; if obj is null, the field must be static
      * @param unpublicized whether the option is unpublicized
      */
+    @SuppressWarnings("determinism") // assigning @PolyDet args to @Det fields in constructors
     OptionInfo(
-        @Det Field field,
-        @Det Option option,
-        @Det @UnknownInitialization @Raw @Nullable Object obj,
-        @Det boolean unpublicized) {
+        Field field,
+        Option option,
+        @UnknownInitialization @Raw @Nullable Object obj,
+        boolean unpublicized) {
       this.field = field;
       //      this.option = option;
       this.obj = obj;
@@ -608,13 +612,15 @@ public class Options {
     /** List of options that belong to this group. */
     List<OptionInfo> optionList;
 
-    OptionGroupInfo(@Det String name, @Det boolean unpublicized) {
+    @SuppressWarnings("determinism") // assigning @PolyDet args to @Det fields in constructors
+    OptionGroupInfo(String name, boolean unpublicized) {
       optionList = new ArrayList<OptionInfo>();
       this.name = name;
       this.unpublicized = unpublicized;
     }
 
-    OptionGroupInfo(@Det OptionGroup optionGroup) {
+    @SuppressWarnings("determinism") // assigning @PolyDet args to @Det fields in constructors
+    OptionGroupInfo(OptionGroup optionGroup) {
       optionList = new ArrayList<OptionInfo>();
       this.name = optionGroup.value();
       this.unpublicized = optionGroup.unpublicized();
@@ -644,7 +650,7 @@ public class Options {
    *
    * @param args the classes whose options to process
    */
-  public Options(@Det @UnknownInitialization @Raw Object... args) {
+  public Options(@UnknownInitialization @Raw Object... args) {
     this("", args);
   }
 
@@ -657,7 +663,8 @@ public class Options {
    * @param usageSynopsis a synopsis of how to call your program
    * @param args the classes whose options to process
    */
-  public Options(@Det String usageSynopsis, @Det @UnknownInitialization @Raw Object... args) {
+  @SuppressWarnings("determinism") // assigning @PolyDet args to @Det fields in constructors
+  public Options(String usageSynopsis, @UnknownInitialization @Raw Object... args) {
 
     if (args.length == 0) {
       throw new Error("Must pass at least one object to Options constructor");
@@ -685,9 +692,6 @@ public class Options {
       if (mainClass == Void.TYPE) {
         mainClass = clazz;
       }
-      // TODO: Come back and decide whether or not this just be suppressed.
-      @SuppressWarnings("determinsim") // The ordering means this will always be non-deterministic,
-                                       // but we don't care.
       @Det Field @OrderNonDet [] fields = clazz.getDeclaredFields();
 
       for (Field f : fields) {
@@ -705,8 +709,7 @@ public class Options {
         }
         try {
           if (debugEnabled) {
-            @SuppressWarnings("determinism") // Printing to a stream.
-            @Det String msg = Arrays.toString(f.getDeclaredAnnotations());
+            String msg = Arrays.toString(f.getDeclaredAnnotations());
             System.err.printf(
                 "  with annotations %s%n", msg);
           }
@@ -834,8 +837,7 @@ public class Options {
       @Nullable T cast = f.getAnnotation((Class<@NonNull T>) annotationClass);
       annotation = cast;
     } catch (Exception e) {
-      @SuppressWarnings("determinism") // Printing to a stream.
-      @Det String msg = String.format(
+      String msg = String.format(
           "Exception in call to f.getAnnotation(%s)%n  for f=%s%n  %s%nClasspath =%n",
           annotationClass, f, e.getMessage());
       // Can get
@@ -851,7 +853,6 @@ public class Options {
   }
 
   /** Print the classpath. */
-  @SuppressWarnings("determinism") // This is non-deterministic because of iteration order.
   static void printClassPath() {
     URLClassLoader sysLoader = (URLClassLoader) ClassLoader.getSystemClassLoader();
     if (sysLoader == null) {
@@ -859,7 +860,7 @@ public class Options {
           "No system class loader. (Maybe means bootstrap class loader is being used?)");
     } else {
       System.out.println("Classpath:");
-      for (URL url : sysLoader.getURLs()) {
+      for (@Det URL url : sysLoader.getURLs()) {
         System.out.println(url.getFile());
       }
     }
@@ -873,7 +874,9 @@ public class Options {
    *
    * @param val whether to parse arguments after a non-option command-line argument
    */
-  public void setParseAfterArg(@Det boolean val) {
+  @SuppressWarnings("determinism") // assigning @PolyDet arg to @Det field, same issue as with
+  // constructors
+  public void setParseAfterArg(boolean val) {
     parseAfterArg = val;
   }
 
@@ -887,7 +890,9 @@ public class Options {
    * @param val whether to parse long options with a single dash, as in <span style="white-space:
    *     nowrap;">{@code -longOption}</span>
    */
-  public void setUseSingleDash(@Det boolean val) {
+  @SuppressWarnings("determinism") // assigning @PolyDet arg to @Det field, same issue as with
+  // constructors
+  public void setUseSingleDash(boolean val) {
     useSingleDash = val;
   }
 
@@ -898,7 +903,6 @@ public class Options {
    * @return all non-option arguments
    * @throws ArgException if the command line contains unknown option or misused options
    */
-  @SuppressWarnings("determinism") // Collections add bug.
   public String[] parse(String[] args) throws ArgException {
 
     List<String> nonOptions = new ArrayList<String>();
@@ -962,8 +966,7 @@ public class Options {
         if (oi.argumentRequired() && (argValue == null)) {
           ii++;
           if (ii >= args.length) {
-            @SuppressWarnings("determinism") // Constructor parameters.
-            @Det ArgException e =  new ArgException("option %s requires an argument", arg);
+            ArgException e =  new ArgException("option %s requires an argument", arg);
             throw e;
           }
           argValue = args[ii];
@@ -975,7 +978,8 @@ public class Options {
         if (!parseAfterArg) {
           ignoreOptions = true;
         }
-        nonOptions.add(arg);
+        @SuppressWarnings("determinism") // adding to a local collection
+        boolean ignored = nonOptions.add(arg);
       }
 
       // If no ',' tail, advance to next args option
@@ -998,7 +1002,6 @@ public class Options {
    * @return a string array analogous to the argument to {@code main}.
    */
   // TODO: should this throw some exceptions?
-  @SuppressWarnings("determinism") // Collections add issue.
   public static String[] tokenize(String args) {
 
     // Split the args string on whitespace boundaries accounting for quoted
@@ -1018,7 +1021,8 @@ public class Options {
         arg += ch;
       } else if (Character.isWhitespace(ch)) {
         // System.out.printf ("adding argument '%s'%n", arg);
-        argList.add(arg);
+        @SuppressWarnings("determinism") // adding to a local collection
+        boolean ignored = argList.add(arg);
         arg = "";
         while ((ii < args.length()) && Character.isWhitespace(args.charAt(ii))) {
           ii++;
@@ -1033,10 +1037,9 @@ public class Options {
       }
     }
     if (!arg.equals("")) {
-      // argList seems to require @Det arguments, when we really want @PolyDet. This may be a bug
-      // in the determinism checker.
       String argDet = arg;
-      argList.add(argDet);
+      @SuppressWarnings("determinism") // adding to a local collection
+      boolean ignored = argList.add(argDet);
     }
 
     String[] argsArray = argList.toArray(new String[argList.size()]);
@@ -1088,7 +1091,7 @@ public class Options {
    * @return all non-option arguments
    * @see #parse(String[])
    */
-  public String[] parse(boolean showUsageOnError, String[] args) {
+  public String[] parse(@Det Options this, boolean showUsageOnError, String[] args) {
 
     @PolyDet String @PolyDet [] nonOptions = null;
 
@@ -1118,13 +1121,12 @@ public class Options {
    *
    * @param ps where to print usage information
    */
-  public void printUsage(PrintStream ps) {
+  public void printUsage(@Det Options this, PrintStream ps) {
     hasListOption = false;
     if (usageSynopsis != null) {
       ps.printf("Usage: %s%n", usageSynopsis);
     }
-    @SuppressWarnings("determinism") // Printing to a stream.
-    @Det String usage = usage();
+    String usage = usage();
     ps.println(usage);
     if (hasListOption) {
       ps.println();
@@ -1133,7 +1135,7 @@ public class Options {
   }
 
   /** Prints, to standard output, usage information. */
-  public void printUsage() {
+  public void printUsage(@Det Options this) {
     printUsage(System.out);
   }
 
@@ -1146,7 +1148,7 @@ public class Options {
    *     unpublicized. If empty and option groups are not being used, will return usage for all
    *     options that are not unpublicized.
    */
-  public @NonDet String usage(String... groupNames) {
+  public String usage(String... groupNames) {
     return usage(false, groupNames);
   }
 
@@ -1160,8 +1162,7 @@ public class Options {
    *     unpublicized. If empty and option groups are not being used, will return usage for all
    *     options that are not unpublicized.
    */
-  @SuppressWarnings("determinism") // Collections add issue.
-  public @NonDet String usage(boolean showUnpublicized, String... groupNames) {
+  public String usage(boolean showUnpublicized, String... groupNames) {
     if (!hasGroups) {
       if (groupNames.length > 0) {
         throw new IllegalArgumentException(
@@ -1195,14 +1196,13 @@ public class Options {
 
     List<Integer> lengths = new ArrayList<Integer>();
     for (OptionGroupInfo gi : groups) {
-      // Once again, the add method seems to require @Det argument here when we want @PolyDet
       int len = maxOptionLength(gi.optionList, showUnpublicized);
-      lengths.add(len);
+      @SuppressWarnings("determinism") // adding to a local collection
+      boolean ignored = lengths.add(len);
     }
     int maxLength = Collections.max(lengths);
 
-    @SuppressWarnings("determinism") // Constructor parameters.
-    @NonDet StringJoiner buf = new StringJoiner(lineSeparator);
+    StringJoiner buf = new StringJoiner(lineSeparator);
     for (OptionGroupInfo gi : groups) {
       buf.add(String.format("%n%s:", gi.name));
       buf.add(formatOptions(gi.optionList, maxLength, showUnpublicized));
@@ -1220,9 +1220,8 @@ public class Options {
    * @param showUnpublicized if true, include unpublicized options in the output
    * @return the formatted options
    */
-  private @NonDet String formatOptions(List<OptionInfo> optList, int maxLength, boolean showUnpublicized) {
-    @SuppressWarnings("determinism") // Constructor parameters.
-    @NonDet StringJoiner buf = new StringJoiner(lineSeparator);
+  private String formatOptions(List<OptionInfo> optList, int maxLength, boolean showUnpublicized) {
+    StringJoiner buf = new StringJoiner(lineSeparator);
     for (OptionInfo oi : optList) {
       if (oi.unpublicized && !showUnpublicized) {
         continue;
@@ -1295,7 +1294,8 @@ public class Options {
    * @param argValue a string representation of the value
    * @throws ArgException if there are any errors
    */
-  @SuppressWarnings("determinism") // Collections add bug and the fact that ArgException must be constructed as deterministic.
+  @SuppressWarnings("determinism") // modifying @Det field with @PolyDet arg, same issue as with
+  // constructors and occurs everywhere optionsString is modified
   private void setArg(OptionInfo oi, String argName, @Nullable String argValue)
       throws ArgException {
 
@@ -1415,17 +1415,18 @@ public class Options {
           if (spaceSeparatedLists) {
             @PolyDet String @PolyDet [] aarr = argValue.split("  *");
             for (String aval : aarr) {
-              // TODO: Is this actually ok?
-              // This is weird because list is a @Det field of a @PolyDet parameter. This should be
-              // okay.
               Object val = getRefArg(oi, argName, aval);
-              oi.list.add(val); // uncheck cast
+              @SuppressWarnings("determinism") // oi is @PolyDet, we usually treat fields as having
+              // the same determinism as the Objects they're a part of, meaning this operation
+              // should be ok, like with @PolyDet args in constructors.
+              boolean ignored = oi.list.add(val); // uncheck cast
             }
           } else {
-            // This is weird because list is a @Det field of a @PolyDet parameter. This should be
-            // okay.
             Object val = getRefArg(oi, argName, argValue);
-            oi.list.add(val);
+            @SuppressWarnings("determinism") // oi is @PolyDet, we usually treat fields as having
+            // the same determinism as the Objects they're a part of, meaning this operation should
+            // be ok, like with @PolyDet args in constructors.
+            boolean ignored = oi.list.add(val);
           }
         } else {
           Object val = getRefArg(oi, argName, argValue);
@@ -1449,16 +1450,18 @@ public class Options {
    * @return a value, whose printed representation is {@code argValue}
    * @throws ArgException if the user supplied an incorrect string (contained in {@code argValue})
    */
-  @SuppressWarnings({"nullness", "determinism"}) // static method, so null first arg is OK: oi.factory
-  // Suppressing determinism because of use of a @Det field in @PolyDet return
-  // valued method.
+  @SuppressWarnings("nullness") // static method, so null first arg is OK: oi.factory
   private @NonNull Object getRefArg(OptionInfo oi, String argName, String argValue)
       throws ArgException {
 
     Object val;
     try {
       if (oi.constructor != null) {
-        val = oi.constructor.newInstance(new Object[] {argValue});
+        @SuppressWarnings("determinism") // the type of this is ? extends @NonDet Object, but this
+        // is this is essentially invoking a constructor called with a @PolyDet argument, so this
+        // call should usually be @PolyDet
+        @PolyDet Object temp = oi.constructor.newInstance(new Object[] {argValue});
+        val = temp;
       } else if (oi.baseType.isEnum()) {
         @SuppressWarnings({"unchecked", "rawtypes"})
         Object tmpVal = getEnumValue((Class<Enum>) oi.baseType, argValue);
@@ -1474,8 +1477,7 @@ public class Options {
         }
       }
     } catch (Exception e) {
-      @SuppressWarnings("determinism") // Constructor parameters.
-      @Det ArgException exception = new ArgException("Invalid argument (%s) for argument %s", argValue, argName);
+      ArgException exception = new ArgException("Invalid argument (%s) for argument %s", argValue, argName);
       throw exception;
     }
 
@@ -1492,9 +1494,7 @@ public class Options {
    * @param name the name of the constant to return
    * @return the enum constant of the specified enum type with the specified name
    */
-  @SuppressWarnings("determinsim") // Nested generics.
   private <T extends Enum<T>> T getEnumValue(Class<T> enumType, String name) {
-    @SuppressWarnings("determinism") // Issues with return type.
     T[] constants = enumType.getEnumConstants();
     if (constants == null) {
       throw new IllegalArgumentException(enumType.getName() + " is not an enum type");
@@ -1540,7 +1540,7 @@ public class Options {
    * @return options, similarly to supplied on the command line
    * @see #settings()
    */
-  public @NonDet String getOptionsString() {
+  public String getOptionsString() {
     return optionsString;
   }
 
@@ -1553,7 +1553,7 @@ public class Options {
    * @return a command line that can be tokenized with {@link #tokenize}, containing the current
    *     setting for each option
    */
-  public @NonDet String settings() {
+  public String settings() {
     return settings(false);
   }
 
@@ -1567,9 +1567,8 @@ public class Options {
    * @return a command line that can be tokenized with {@link #tokenize}, containing the current
    *     setting for each option
    */
-  public @NonDet String settings(boolean showUnpublicized) {
-    @SuppressWarnings("determinism") // Constructor parameters.
-    @NonDet StringJoiner out = new StringJoiner(lineSeparator);
+  public String settings(boolean showUnpublicized) {
+    StringJoiner out = new StringJoiner(lineSeparator);
 
     // Determine the length of the longest name
     int maxLength = maxOptionLength(options, showUnpublicized);
@@ -1602,10 +1601,7 @@ public class Options {
   }) // side effect to local state (string creation)
   @SideEffectFree
   public String toString(@GuardSatisfied Options this) {
-    @SuppressWarnings("determinism") // Need to return @PolyDet from toString.
-    // Below should be a @NonDet builder, but to satisfy the contract of
-    // toString, the result must be @PolyDet, which this technically violates.
-    @Det StringJoiner out = new StringJoiner(lineSeparator);
+    StringJoiner out = new StringJoiner(lineSeparator);
 
     for (OptionInfo oi : options) {
       out.add(oi.toString());
@@ -1648,7 +1644,8 @@ public class Options {
     @Nullable String typeName;
     String description;
 
-    ParseResult(@Det @Nullable String shortName, @Det @Nullable String typeName, @Det String description) {
+    @SuppressWarnings("determinism") // assigning @PolyDet args to @Det fields in constructors
+    ParseResult(@Nullable String shortName, @Nullable String typeName, String description) {
       this.shortName = shortName;
       this.typeName = typeName;
       this.description = description;
@@ -1663,7 +1660,7 @@ public class Options {
    * @param val the string to parse, which is an argument to {@code @Option}
    * @return a description of the option
    */
-  private static ParseResult parseOption(@Det String val) {
+  private static ParseResult parseOption(String val) {
 
     // Get the short name, long name, and description
     String shortName;

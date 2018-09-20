@@ -173,7 +173,8 @@ import org.checkerframework.common.value.qual.MinLen;
 @SuppressWarnings("deprecation") // JDK 9 deprecates com.sun.javadoc package
 public class OptionsDoclet {
 
-  private static @NonDet String eol = System.getProperty("line.separator");
+  @SuppressWarnings("determinism") // https://github.com/t-rasmud/checker-framework/issues/37
+  private static String eol = System.getProperty("line.separator");
 
   private static final @Format({}) String USAGE =
       "Provided by Options doclet:%n"
@@ -211,7 +212,8 @@ public class OptionsDoclet {
    * @param root the document root
    * @param options the command-line options
    */
-  public OptionsDoclet(@Det RootDoc root, @Det Options options) {
+  @SuppressWarnings("determinism") // assigning @PolyDet args to @Det fields in constructrs
+  public OptionsDoclet(RootDoc root, Options options) {
     this.root = root;
     this.options = options;
   }
@@ -233,7 +235,7 @@ public class OptionsDoclet {
    * @param root the root document
    * @return true if processing completed without an error
    */
-  public static boolean start(@Det RootDoc root) {
+  public static boolean start(RootDoc root) {
     List<Object> objs = new ArrayList<Object>();
     for (ClassDoc doc : root.specifiedClasses()) {
       // TODO: Class.forName() expects a binary name but doc.qualifiedName()
@@ -260,7 +262,10 @@ public class OptionsDoclet {
         try {
           Constructor<?> c = clazz.getDeclaredConstructor();
           c.setAccessible(true);
-          @SuppressWarnings("determinism") // newInstance is typed as @NonDet Object.
+          @SuppressWarnings("determinism") // The type of c.newInstance is ? extends @NonDet Object
+          // but it's calling the default constructor with no arguments. This could conceivably be
+          // @NonDet, e.g. new Random(), but not with the type of Objects this is likely to be in
+          // this program.
           @Det Object instance = c.newInstance(new Object[0]);
           objs.add(instance);
         } catch (Exception e) {
@@ -268,7 +273,8 @@ public class OptionsDoclet {
           return false;
         }
       } else {
-        objs.add(clazz);
+        @SuppressWarnings("determinism") // adding to a local collection
+        boolean ignored = objs.add(clazz);
       }
     }
 
@@ -277,7 +283,10 @@ public class OptionsDoclet {
       return false;
     }
 
-    Object[] objarray = objs.toArray();
+    @PolyDet Object @PolyDet [] objarray = objs.toArray();
+    @SuppressWarnings("determinism") // as a consequence of
+    // https://github.com/t-rasmud/checker-framework/issues/32, objsarray gets the type @Det Object
+    // @PolyDet [], which doesn't match the declaration
     Options options = new Options(objarray);
     if (options.getOptions().size() < 1) {
       System.out.println("Error: no @Option-annotated fields found");
@@ -340,7 +349,8 @@ public class OptionsDoclet {
    *     overview</a>
    */
   @SuppressWarnings("index") // dependent: os[1] is legal when optionLength(os[0])==2
-  public static boolean validOptions(String[] @MinLen(1) [] options, DocErrorReporter reporter) {
+  public static @PolyDet("up") boolean validOptions(
+      String[] @MinLen(1) [] options, DocErrorReporter reporter) {
     boolean hasDocFile = false;
     boolean hasOutFile = false;
     boolean hasDestDir = false;
@@ -349,7 +359,7 @@ public class OptionsDoclet {
     String docFile = null;
     String outFile = null;
     for (int oi = 0; oi < options.length; oi++) {
-      String[] os = options[oi];
+      @PolyDet String @PolyDet("up") [] os = options[oi];
       String opt = os[0].toLowerCase();
       if (opt.equals("-docfile")) {
         if (hasDocFile) {
@@ -425,7 +435,7 @@ public class OptionsDoclet {
     String outFilename = null;
     File destDir = null;
     for (int oi = 0; oi < options.length; oi++) {
-      String[] os = options[oi];
+      @PolyDet String @PolyDet("up") [] os = options[oi];
       String opt = os[0].toLowerCase();
       if (opt.equals("-docfile")) {
         this.docFile = new File(os[1]);
@@ -502,7 +512,7 @@ public class OptionsDoclet {
    * @return the user-visible doclet output
    * @throws Exception if there is trouble
    */
-  public @NonDet String output() throws Exception {
+  public String output() throws Exception {
     if (docFile == null) {
       if (formatJavadoc) {
         return optionsToJavadoc(0, 99);
@@ -521,9 +531,8 @@ public class OptionsDoclet {
    * @throws Exception if there is trouble reading files
    */
   @RequiresNonNull("docFile")
-  private @NonDet String newDocFileText() throws Exception {
-    @SuppressWarnings("determinism") // Constructor parameters.
-@NonDet    StringJoiner b = new StringJoiner(eol);
+  private String newDocFileText() throws Exception {
+    StringJoiner b = new StringJoiner(eol);
     BufferedReader doc = Files.newBufferedReader(docFile.toPath(), UTF_8);
     String docline;
     boolean replacing = false;
@@ -565,13 +574,13 @@ public class OptionsDoclet {
   // HTML and Javadoc processing methods
 
   /** Adds Javadoc info to each option in {@code options.getOptions()}. */
-  @SuppressWarnings("determinism") // This is non-deterministic because of iteration order.
   public void processJavadoc() {
     for (Options.OptionInfo oi : options.getOptions()) {
       ClassDoc optDoc = root.classNamed(oi.getDeclaringClass().getName());
       if (optDoc != null) {
         String nameWithUnderscores = oi.longName.replace('-', '_');
-        for (FieldDoc fd : optDoc.fields()) {
+        for (@Det FieldDoc fd : optDoc.fields()) {
+          FieldDoc a = fd;
           if (fd.name().equals(nameWithUnderscores)) {
             // If Javadoc for field is unavailable, then use the @Option
             // description in the documentation.
@@ -600,7 +609,6 @@ public class OptionsDoclet {
    *
    * @param oi the enum option whose Javadoc to read
    */
-  @SuppressWarnings("determinism") // Collections put issue.
   private void processEnumJavadoc(Options.OptionInfo oi) {
     Enum<?>[] constants = (Enum<?>[]) oi.baseType.getEnumConstants();
     if (constants == null) {
@@ -621,7 +629,7 @@ public class OptionsDoclet {
 
     assert oi.enumJdoc != null : "@AssumeAssertion(nullness): bug in flow?";
     for (String name : oi.enumJdoc.keySet()) {
-      for (FieldDoc fd : enumDoc.fields()) {
+      for (@Det FieldDoc fd : enumDoc.fields()) {
         if (fd.name().equals(name)) {
           if (formatJavadoc) {
             oi.enumJdoc.put(name, fd.commentText());
@@ -641,8 +649,6 @@ public class OptionsDoclet {
    * @return the HTML documentation for the underlying Options instance
    */
   public String optionsToHtml(int refillWidth) {
-    @SuppressWarnings("determinism") // Constructor parameters.
-    @NonDet
     StringJoiner b = new StringJoiner(eol);
 
     if (includeClassDoc && root.classes().length > 0) {
@@ -692,9 +698,8 @@ public class OptionsDoclet {
    * @param refillWidth the number of columns to fit the text into, by breaking lines
    * @return the HTML documentation for the underlying Options instance
    */
-  public @NonDet String optionsToJavadoc(int padding, int refillWidth) {
-    @SuppressWarnings("determinism") // Constructor parameters.
-    @NonDet StringJoiner b = new StringJoiner(eol);
+  public String optionsToJavadoc(int padding, int refillWidth) {
+    StringJoiner b = new StringJoiner(eol);
     Scanner s = new Scanner(optionsToHtml(refillWidth - padding - 2));
 
     while (s.hasNextLine()) {
@@ -725,8 +730,7 @@ public class OptionsDoclet {
    */
   private @NonDet String optionListToHtml(
       List<Options.OptionInfo> optList, int padding, int firstLinePadding, int refillWidth) {
-    @SuppressWarnings("determinism") // Constructor parameters.
-    @NonDet StringJoiner b = new StringJoiner(eol);
+    StringJoiner b = new StringJoiner(eol);
     for (Options.OptionInfo oi : optList) {
       if (oi.unpublicized) {
         continue;
@@ -755,7 +759,7 @@ public class OptionsDoclet {
    * @return a string in which no more than {@code refillWidth} characters appear between any two
    *     end-of-line character sequences
    */
-  private  @NonDet String refill( @NonDet String in, int padding, int firstLinePadding, int refillWidth) {
+  private String refill(String in, int padding, int firstLinePadding, int refillWidth) {
     if (refillWidth <= 0) {
       return in;
     }
@@ -779,8 +783,7 @@ public class OptionsDoclet {
       compressedSpaces = compressedSpaces.substring(1);
     }
     String oneLine = StringUtils.repeat(" ", firstLinePadding) + compressedSpaces;
-    @SuppressWarnings("determinism") // Constructor parameters.
-    @NonDet StringJoiner multiLine = new StringJoiner(eol);
+    StringJoiner multiLine = new StringJoiner(eol);
     while (oneLine.length() > refillWidth) {
       int breakLoc = oneLine.lastIndexOf(' ', refillWidth);
       if (breakLoc == -1) {
@@ -826,8 +829,7 @@ public class OptionsDoclet {
       b.append(" <code>[+]</code>");
     }
     f.format(".%n ");
-    @SuppressWarnings("determinism") // For outputing to a stream.
-    @Det String repeated = StringUtils.repeat(" ", padding);
+    String repeated = StringUtils.repeat(" ", padding);
     f.format("%s", repeated);
 
     String jdoc = ((oi.jdoc == null) ? "" : oi.jdoc);
