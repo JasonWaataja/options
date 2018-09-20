@@ -31,7 +31,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.regex.Pattern;
-import org.checkerframework.checker.determinism.qual.*;
+import org.checkerframework.checker.determinism.qual.Det;
+import org.checkerframework.checker.determinism.qual.OrderNonDet;
+import org.checkerframework.checker.determinism.qual.PolyDet;
 import org.checkerframework.checker.formatter.qual.FormatMethod;
 import org.checkerframework.checker.initialization.qual.Initialized;
 import org.checkerframework.checker.initialization.qual.UnknownInitialization;
@@ -691,7 +693,7 @@ public class Options {
       if (mainClass == Void.TYPE) {
         mainClass = clazz;
       }
-      @Det Field @OrderNonDet [] fields = clazz.getDeclaredFields();
+      Field @OrderNonDet [] fields = clazz.getDeclaredFields();
 
       for (Field f : fields) {
         try {
