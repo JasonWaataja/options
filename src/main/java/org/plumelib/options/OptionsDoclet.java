@@ -205,7 +205,22 @@ public class OptionsDoclet {
   private RootDoc root;
   private Options options;
 
+  /**
+   * Create an OptionsDoclet that documents the given options.
+   *
+   * @param root the document root
+   * @param options the command-line options
+   */
   public OptionsDoclet(@Det RootDoc root, @Det Options options) {
+    this.root = root;
+    this.options = options;
+  }
+
+  // Doclet-specific methods
+
+  /**
+   * Entry point for the doclet.
+   *
     this.root = root;
     this.options = options;
   }
@@ -915,7 +930,7 @@ public class OptionsDoclet {
   }
 
   /**
-   * See {@link Options#getUseSingleDash()}.
+   * Return true if using a single dash (as opposed to a double dash) for command-line options.
    *
    * @return whether to use a single dash (as opposed to a double dash) for command-line options
    */
