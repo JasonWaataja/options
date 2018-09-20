@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.regex.Pattern;
-
 import org.checkerframework.checker.determinism.qual.*;
 import org.checkerframework.checker.formatter.qual.FormatMethod;
 import org.checkerframework.checker.initialization.qual.Initialized;
@@ -710,8 +709,7 @@ public class Options {
         try {
           if (debugEnabled) {
             String msg = Arrays.toString(f.getDeclaredAnnotations());
-            System.err.printf(
-                "  with annotations %s%n", msg);
+            System.err.printf("  with annotations %s%n", msg);
           }
         } catch (java.lang.ArrayStoreException e) {
           if (e.getMessage() != null
@@ -837,9 +835,10 @@ public class Options {
       @Nullable T cast = f.getAnnotation((Class<@NonNull T>) annotationClass);
       annotation = cast;
     } catch (Exception e) {
-      String msg = String.format(
-          "Exception in call to f.getAnnotation(%s)%n  for f=%s%n  %s%nClasspath =%n",
-          annotationClass, f, e.getMessage());
+      String msg =
+          String.format(
+              "Exception in call to f.getAnnotation(%s)%n  for f=%s%n  %s%nClasspath =%n",
+              annotationClass, f, e.getMessage());
       // Can get
       //   java.lang.ArrayStoreException: sun.reflect.annotation.TypeNotPresentExceptionProxy
       // when an annotation is not present at run time (example: @NonNull)
@@ -966,7 +965,7 @@ public class Options {
         if (oi.argumentRequired() && (argValue == null)) {
           ii++;
           if (ii >= args.length) {
-            ArgException e =  new ArgException("option %s requires an argument", arg);
+            ArgException e = new ArgException("option %s requires an argument", arg);
             throw e;
           }
           argValue = args[ii];
@@ -1353,7 +1352,7 @@ public class Options {
           f.setByte(oi.obj, val);
         } else if (type == Character.TYPE) {
           if (argValue.length() != 1) {
-            throw  new ArgException(
+            throw new ArgException(
                 "Value \"%s\" for argument %s is not a single character", argValue, argName);
           }
           char val = argValue.charAt(0);
@@ -1477,7 +1476,8 @@ public class Options {
         }
       }
     } catch (Exception e) {
-      ArgException exception = new ArgException("Invalid argument (%s) for argument %s", argValue, argName);
+      ArgException exception =
+          new ArgException("Invalid argument (%s) for argument %s", argValue, argName);
       throw exception;
     }
 
